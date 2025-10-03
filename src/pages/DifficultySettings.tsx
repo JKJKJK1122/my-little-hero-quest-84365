@@ -1,16 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Settings, ArrowLeft, BookOpen } from 'lucide-react';
+import { Settings, ArrowLeft, BookOpen, User } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { VoiceType } from '@/hooks/useTextToSpeech';
 
 const DifficultySettings = () => {
   const navigate = useNavigate();
+  const [voiceType, setVoiceType] = useState<VoiceType>(() => {
+    const saved = localStorage.getItem('voiceType');
+    return (saved as VoiceType) || 'female';
+  });
 
   const setDifficultyLevel = (level: 'beginner' | 'intermediate' | 'advanced') => {
     localStorage.setItem('literacyLevel', level);
     localStorage.setItem('literacyTestCompleted', 'true');
     navigate('/main-menu');
+  };
+
+  const handleVoiceChange = (value: VoiceType) => {
+    setVoiceType(value);
+    localStorage.setItem('voiceType', value);
   };
 
   const levels = [
@@ -55,6 +66,26 @@ const DifficultySettings = () => {
             <p className="text-muted-foreground">원하는 단계를 선택해주세요</p>
           </div>
         </div>
+
+        {/* 목소리 설정 */}
+        <Card className="p-6 mb-4 border-2 border-purple-200">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-full bg-purple-100">
+              <User size={20} className="text-purple-600" />
+            </div>
+            <h2 className="text-lg font-bold text-foreground">목소리 설정</h2>
+          </div>
+          <Select value={voiceType} onValueChange={handleVoiceChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="목소리 선택" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="female">👩 여자 목소리</SelectItem>
+              <SelectItem value="male">👨 남자 목소리</SelectItem>
+              <SelectItem value="child">👧 아이 목소리</SelectItem>
+            </SelectContent>
+          </Select>
+        </Card>
 
         {/* 난이도 선택 */}
         <div className="space-y-4">

@@ -4,7 +4,11 @@ export type VoiceType = 'female' | 'male' | 'child';
 
 export const useTextToSpeech = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [voiceType, setVoiceType] = useState<VoiceType>('female');
+  const [voiceType, setVoiceType] = useState<VoiceType>(() => {
+    // localStorage에서 목소리 설정 불러오기
+    const saved = localStorage.getItem('voiceType');
+    return (saved as VoiceType) || 'female';
+  });
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   useEffect(() => {
@@ -16,6 +20,11 @@ export const useTextToSpeech = () => {
     loadVoices();
     window.speechSynthesis.onvoiceschanged = loadVoices;
   }, []);
+
+  // voiceType이 변경될 때 localStorage에 저장
+  useEffect(() => {
+    localStorage.setItem('voiceType', voiceType);
+  }, [voiceType]);
 
   const getVoiceSettings = (type: VoiceType) => {
     const koreanVoices = availableVoices.filter(voice => voice.lang.includes('ko'));

@@ -3,8 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Star, RotateCcw, Zap, Trash2, Volume2, Mic, MicOff, User } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowLeft, Star, RotateCcw, Zap, Trash2, Volume2, Mic, MicOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
@@ -41,7 +40,7 @@ const CustomGamePlay = () => {
   const decodedThemeName = decodeURIComponent(themeName || '');
 
   // TTS 및 음성인식
-  const { speak, stop: stopSpeaking, isSpeaking, voiceType, setVoiceType } = useTextToSpeech();
+  const { speak, stop: stopSpeaking, isSpeaking } = useTextToSpeech();
   const { isListening, startListening, stopListening } = useSpeechRecognition({
     enabled: !showResult,
     onResult: (transcript) => {
@@ -381,7 +380,7 @@ const CustomGamePlay = () => {
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50 p-4">
       <div className="max-w-md mx-auto">
         {/* 헤더 */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-6">
           <Button 
             variant="ghost" 
             size="icon"
@@ -410,23 +409,6 @@ const CustomGamePlay = () => {
           >
             <Trash2 size={18} />
           </Button>
-        </div>
-
-        {/* 목소리 선택 */}
-        <div className="mb-4">
-          <Select value={voiceType} onValueChange={(value: any) => setVoiceType(value)}>
-            <SelectTrigger className="w-full bg-white">
-              <div className="flex items-center gap-2">
-                <User size={16} />
-                <SelectValue placeholder="목소리 선택" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="female">👩 여자 목소리</SelectItem>
-              <SelectItem value="male">👨 남자 목소리</SelectItem>
-              <SelectItem value="child">👧 아이 목소리</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
 
