@@ -3,10 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Star, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Star, RotateCcw, Volume2, Mic, MicOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { SCENARIOS } from '@/data/GameScenarios';
+import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
+import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 
 interface Scenario {
   id: string;
@@ -35,6 +37,27 @@ const GamePlay = () => {
 
   // 세션 ID 생성 (임시로 timestamp 사용)
   const userSession = `session_${Date.now()}`;
+
+  // TTS 및 음성인식
+  const { speak, stop: stopSpeaking, isSpeaking } = useTextToSpeech();
+  const { isListening, startListening, stopListening } = useSpeechRecognition({
+    enabled: !showResult,
+    onResult: (transcript) => {
+      // "a", "b", "c" 등을 인식
+      const match = transcript.match(/[abc에이비씨]/i);
+      if (match && !showResult) {
+        let index = -1;
+        const char = match[0].toLowerCase();
+        if (char === 'a' || char === '에이') index = 0;
+        else if (char === 'b' || char === '비') index = 1;
+        else if (char === 'c' || char === '씨') index = 2;
+        
+        if (index >= 0 && index < currentScenario?.options.length) {
+          handleOptionSelect(index);
+        }
+      }
+    }
+  });
 
   useEffect(() => {
     // localStorage에서 난이도 설정 확인
@@ -310,6 +333,15 @@ const loadScenarios = async () => {
     setSelectedOption(null);
     setShowResult(false);
     setIsCorrect(false);
+    stopSpeaking();
+  };
+
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
   };
 
   if (loading) {
@@ -363,13 +395,35 @@ const loadScenarios = async () => {
 
         {/* 문제 카드 */}
         <Card className="p-6 mb-6">
-          <h2 className={`font-bold text-primary mb-3 ${difficultyLevel === 'beginner' ? 'text-lg' : difficultyLevel === 'intermediate' ? 'text-base' : 'text-sm'}`}>
-            {currentScenario.title}
-          </h2>
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <h2 className={`font-bold text-primary flex-1 ${difficultyLevel === 'beginner' ? 'text-lg' : difficultyLevel === 'intermediate' ? 'text-base' : 'text-sm'}`}>
+              {currentScenario.title}
+            </h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => speak(currentScenario.title)}
+              className="flex-shrink-0 h-8 w-8"
+              disabled={isSpeaking}
+            >
+              <Volume2 size={18} className="text-primary" />
+            </Button>
+          </div>
           <div className="bg-blue-50 p-4 rounded-lg mb-4">
-            <p className={`text-foreground ${difficultyLevel === 'beginner' ? 'text-base leading-relaxed' : difficultyLevel === 'intermediate' ? 'text-sm leading-relaxed' : 'text-sm leading-normal'}`}>
-              {currentScenario.situation}
-            </p>
+            <div className="flex items-start justify-between gap-2">
+              <p className={`text-foreground flex-1 ${difficultyLevel === 'beginner' ? 'text-base leading-relaxed' : difficultyLevel === 'intermediate' ? 'text-sm leading-relaxed' : 'text-sm leading-normal'}`}>
+                {currentScenario.situation}
+              </p>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => speak(currentScenario.situation)}
+                className="flex-shrink-0 h-8 w-8"
+                disabled={isSpeaking}
+              >
+                <Volume2 size={18} className="text-blue-600" />
+              </Button>
+            </div>
           </div>
           
           {/* 일러스트 영역 (임시) */}
@@ -378,6 +432,19 @@ const loadScenarios = async () => {
             <p className="text-sm text-muted-foreground">어떻게 해야 할까요?</p>
           </div>
         </Card>
+
+        {/* 음성인식 버튼 */}
+        <div className="flex justify-center mb-4">
+          <Button
+            variant={isListening ? "default" : "outline"}
+            onClick={toggleListening}
+            className="gap-2"
+            disabled={showResult}
+          >
+            {isListening ? <Mic className="animate-pulse" size={18} /> : <MicOff size={18} />}
+            {isListening ? '음성 인식 중...' : '음성으로 답하기'}
+          </Button>
+        </div>
 
         {/* 선택지 */}
         <div className="flex flex-col gap-3 mb-6 w-full">
@@ -399,23 +466,33 @@ const loadScenarios = async () => {
             }
 
             return (
-              <Button
-                key={option.id}
-                variant="outline"
-                className={buttonClass}
-                onClick={() => handleOptionSelect(index)}
-                disabled={showResult}
-              >
-                <div className="flex items-start gap-3 w-full min-w-0">
-                  <span className="font-bold text-primary flex-shrink-0 min-w-[20px] mt-0.5">
-                    {String.fromCharCode(97 + index)}.
-                  </span>
-                  <span className="text-sm leading-relaxed break-words whitespace-pre-wrap flex-1 min-w-0">{option.text}</span>
-                  {showResult && option.is_correct && (
-                    <Star className="text-yellow-500 flex-shrink-0 mt-0.5" size={16} />
-                  )}
-                </div>
-              </Button>
+              <div key={option.id} className="flex gap-2 w-full">
+                <Button
+                  variant="outline"
+                  className={buttonClass}
+                  onClick={() => handleOptionSelect(index)}
+                  disabled={showResult}
+                >
+                  <div className="flex items-start gap-3 w-full min-w-0">
+                    <span className="font-bold text-primary flex-shrink-0 min-w-[20px] mt-0.5">
+                      {String.fromCharCode(97 + index)}.
+                    </span>
+                    <span className="text-sm leading-relaxed break-words whitespace-pre-wrap flex-1 min-w-0">{option.text}</span>
+                    {showResult && option.is_correct && (
+                      <Star className="text-yellow-500 flex-shrink-0 mt-0.5" size={16} />
+                    )}
+                  </div>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => speak(`${String.fromCharCode(97 + index)}. ${option.text}`)}
+                  className="flex-shrink-0 h-auto"
+                  disabled={isSpeaking || showResult}
+                >
+                  <Volume2 size={18} />
+                </Button>
+              </div>
             );
           })}
         </div>
