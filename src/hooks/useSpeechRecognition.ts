@@ -8,6 +8,7 @@ interface UseSpeechRecognitionProps {
 export const useSpeechRecognition = ({ onResult, enabled }: UseSpeechRecognitionProps) => {
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Web Speech API 지원 확인
@@ -62,6 +63,14 @@ export const useSpeechRecognition = ({ onResult, enabled }: UseSpeechRecognition
       try {
         recognitionRef.current.start();
         setIsListening(true);
+        
+        // 5초 후 자동으로 중지
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = setTimeout(() => {
+          stopListening();
+        }, 5000);
       } catch (e) {
         console.error('Failed to start recognition:', e);
       }
@@ -69,6 +78,10 @@ export const useSpeechRecognition = ({ onResult, enabled }: UseSpeechRecognition
   };
 
   const stopListening = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
     if (recognitionRef.current) {
       recognitionRef.current.stop();
       setIsListening(false);
