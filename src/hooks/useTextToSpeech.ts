@@ -33,20 +33,20 @@ export const useTextToSpeech = () => {
       case 'female':
         return {
           voice: koreanVoices.find(v => v.name.includes('Female') || v.name.includes('여성')) || koreanVoices[0],
-          pitch: 1.1,
-          rate: 0.9
+          pitch: 1.2,
+          rate: 0.95
         };
       case 'male':
         return {
           voice: koreanVoices.find(v => v.name.includes('Male') || v.name.includes('남성')) || koreanVoices[1] || koreanVoices[0],
-          pitch: 0.8,
-          rate: 0.9
+          pitch: 0.7,
+          rate: 0.85
         };
       case 'child':
         return {
           voice: koreanVoices[0],
-          pitch: 1.5,
-          rate: 1.0
+          pitch: 1.6,
+          rate: 1.1
         };
       default:
         return {
