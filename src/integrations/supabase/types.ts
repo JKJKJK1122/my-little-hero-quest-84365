@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      custom_themes: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          theme_name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          theme_name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          theme_name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       game_progress: {
         Row: {
           completed: boolean | null
@@ -115,6 +142,143 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      scenario_options: {
+        Row: {
+          created_at: string | null
+          feedback: string | null
+          id: string
+          is_correct: boolean
+          option_text: string
+          scenario_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          feedback?: string | null
+          id?: string
+          is_correct?: boolean
+          option_text: string
+          scenario_id: string
+        }
+        Update: {
+          created_at?: string | null
+          feedback?: string | null
+          id?: string
+          is_correct?: boolean
+          option_text?: string
+          scenario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenario_options_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scenarios: {
+        Row: {
+          created_at: string | null
+          custom_theme_id: string | null
+          id: string
+          situation: string
+          theme: string
+          title: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_theme_id?: string | null
+          id?: string
+          situation: string
+          theme: string
+          title: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_theme_id?: string | null
+          id?: string
+          situation?: string
+          theme?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenarios_custom_theme_id_fkey"
+            columns: ["custom_theme_id"]
+            isOneToOne: false
+            referencedRelation: "custom_themes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_progress: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_correct: boolean
+          scenario_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_correct: boolean
+          scenario_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean
+          scenario_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_progress_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wrong_answers: {
+        Row: {
+          created_at: string | null
+          id: string
+          scenario_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          scenario_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          scenario_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wrong_answers_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

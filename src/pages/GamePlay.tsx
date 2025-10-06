@@ -158,7 +158,7 @@ const loadScenarios = async () => {
     setLoading(true);
 
     // Supabase에서 메인 카테고리 + 현재 테마의 시나리오 불러오기
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('scenarios')
       .select(`
         id,
@@ -180,7 +180,7 @@ const loadScenarios = async () => {
     if (!data || data.length === 0) {
       await createSampleData();
 
-      const { data: seeded, error: seededErr } = await supabase
+      const { data: seeded, error: seededErr } = await (supabase as any)
         .from('scenarios')
         .select(`
           id,
@@ -240,7 +240,7 @@ const loadScenarios = async () => {
     
     for (const scenario of sampleScenarios) {
       try {
-        const { data: scenarioData, error: scenarioError } = await supabase
+        const { data: scenarioData, error: scenarioError } = await (supabase as any)
           .from('scenarios')
           .insert([{
             title: scenario.title,
