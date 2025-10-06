@@ -89,39 +89,35 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/main-menu`;
       const syntheticEmail = makeEmailFromId(loginId);
 
-      const { error } = await supabase.auth.signUp({
-        email: syntheticEmail,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            username,
-            login_id: loginId,
-          },
-        },
+      // 1) 서버 함수로 사용자 생성(이메일 자동 확인, 프로필/펫 자동 생성)
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('username-signup', {
+        body: { loginId, username, password },
       });
 
-      if (error) {
-        if (error.message.includes('already registered')) {
-          toast({
-            title: '회원가입 실패',
-            description: '이미 사용 중인 아이디예요.',
-            variant: 'destructive',
-          });
+      if (fnError) {
+        const msg = (fnError as any)?.message || '회원가입 중 오류가 발생했습니다.';
+        if (msg.includes('already')) {
+          toast({ title: '회원가입 실패', description: '이미 사용 중인 아이디예요.', variant: 'destructive' });
         } else {
-          throw error;
+          toast({ title: '회원가입 실패', description: msg, variant: 'destructive' });
         }
         setIsLoading(false);
         return;
       }
 
-      toast({
-        title: '회원가입 성공! 🎉',
-        description: '환영합니다! 첫 번째 알을 받았어요!',
+      // 2) 바로 로그인
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: syntheticEmail,
+        password,
       });
+
+      if (signInError) {
+        throw signInError;
+      }
+
+      toast({ title: '회원가입 성공! 🎉', description: '환영합니다! 첫 번째 알을 받았어요!' });
       // onAuthStateChange에서 navigate 처리
     } catch (error: any) {
       console.error('Sign up error:', error);
