@@ -8,12 +8,30 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, UserPlus, Sparkles } from 'lucide-react';
+import { z } from 'zod';
+
+const loginIdSchema = z
+  .string()
+  .trim()
+  .min(3, { message: '아이디는 최소 3자입니다.' })
+  .max(20, { message: '아이디는 최대 20자입니다.' })
+  .regex(/^[a-zA-Z0-9_]+$/, { message: '영문, 숫자, 밑줄만 사용 가능해요.' });
+const passwordSchema = z
+  .string()
+  .min(6, { message: '비밀번호는 최소 6자입니다.' })
+  .max(72, { message: '비밀번호는 최대 72자입니다.' });
+const nicknameSchema = z
+  .string()
+  .trim()
+  .min(1, { message: '닉네임을 입력해주세요.' })
+  .max(20, { message: '닉네임은 최대 20자입니다.' });
+const makeEmailFromId = (id: string) => `${id}@user.local`;
 
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState('');
+  const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
 
@@ -35,24 +53,36 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // SEO 설정
+  useEffect(() => {
+    document.title = '로그인/회원가입 - 똑똑한 선택왕';
+    const content = '아이디와 비밀번호로 간편하게 로그인하고 회원가입하세요.';
+    let meta = document.querySelector('meta[name="description"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'description');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', content);
+  }, []);
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !password || !username) {
-      toast({
-        title: "입력 오류",
-        description: "모든 항목을 입력해주세요.",
-        variant: "destructive"
-      });
+
+    const idCheck = loginIdSchema.safeParse(loginId);
+    const passCheck = passwordSchema.safeParse(password);
+    const nameCheck = nicknameSchema.safeParse(username);
+
+    if (!idCheck.success) {
+      toast({ title: '입력 오류', description: idCheck.error.issues[0].message, variant: 'destructive' });
       return;
     }
-
-    if (password.length < 6) {
-      toast({
-        title: "비밀번호 오류",
-        description: "비밀번호는 최소 6자 이상이어야 합니다.",
-        variant: "destructive"
-      });
+    if (!passCheck.success) {
+      toast({ title: '비밀번호 오류', description: passCheck.error.issues[0].message, variant: 'destructive' });
+      return;
+    }
+    if (!nameCheck.success) {
+      toast({ title: '닉네임 오류', description: nameCheck.error.issues[0].message, variant: 'destructive' });
       return;
     }
 
@@ -60,24 +90,26 @@ const Auth = () => {
 
     try {
       const redirectUrl = `${window.location.origin}/main-menu`;
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
+      const syntheticEmail = makeEmailFromId(loginId);
+
+      const { error } = await supabase.auth.signUp({
+        email: syntheticEmail,
         password,
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            username: username
-          }
-        }
+            username,
+            login_id: loginId,
+          },
+        },
       });
 
       if (error) {
         if (error.message.includes('already registered')) {
           toast({
-            title: "회원가입 실패",
-            description: "이미 등록된 이메일입니다. 로그인해주세요.",
-            variant: "destructive"
+            title: '회원가입 실패',
+            description: '이미 사용 중인 아이디예요.',
+            variant: 'destructive',
           });
         } else {
           throw error;
@@ -87,31 +119,34 @@ const Auth = () => {
       }
 
       toast({
-        title: "회원가입 성공! 🎉",
-        description: "환영합니다! 첫 번째 알을 받았어요!",
+        title: '회원가입 성공! 🎉',
+        description: '환영합니다! 첫 번째 알을 받았어요!',
       });
-
-      // 자동 로그인되므로 navigate는 onAuthStateChange에서 처리됨
+      // onAuthStateChange에서 navigate 처리
     } catch (error: any) {
       console.error('Sign up error:', error);
       toast({
-        title: "회원가입 실패",
-        description: error.message || "회원가입 중 오류가 발생했습니다.",
-        variant: "destructive"
+        title: '회원가입 실패',
+        description: error.message || '회원가입 중 오류가 발생했습니다.',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !password) {
+
+    const idCheck = loginIdSchema.safeParse(loginId);
+    const passCheck = passwordSchema.safeParse(password);
+
+    if (!idCheck.success || !passCheck.success) {
       toast({
-        title: "입력 오류",
-        description: "이메일과 비밀번호를 입력해주세요.",
-        variant: "destructive"
+        title: '입력 오류',
+        description: !idCheck.success ? idCheck.error.issues[0].message : passCheck.error.issues[0].message,
+        variant: 'destructive',
       });
       return;
     }
@@ -119,17 +154,18 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
+      const syntheticEmail = makeEmailFromId(loginId);
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: syntheticEmail,
         password,
       });
 
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
           toast({
-            title: "로그인 실패",
-            description: "이메일 또는 비밀번호가 올바르지 않습니다.",
-            variant: "destructive"
+            title: '로그인 실패',
+            description: '아이디 또는 비밀번호가 올바르지 않습니다.',
+            variant: 'destructive',
           });
         } else {
           throw error;
@@ -139,22 +175,23 @@ const Auth = () => {
       }
 
       toast({
-        title: "로그인 성공! 👋",
-        description: "다시 만나서 반가워요!",
+        title: '로그인 성공! 👋',
+        description: '다시 만나서 반가워요!',
       });
 
       // navigate는 onAuthStateChange에서 처리됨
     } catch (error: any) {
       console.error('Sign in error:', error);
       toast({
-        title: "로그인 실패",
-        description: error.message || "로그인 중 오류가 발생했습니다.",
-        variant: "destructive"
+        title: '로그인 실패',
+        description: error.message || '로그인 중 오류가 발생했습니다.',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-purple-50 p-4 flex items-center justify-center">
@@ -180,13 +217,13 @@ const Auth = () => {
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">이메일</Label>
+                  <Label htmlFor="signin-id">아이디</Label>
                   <Input
-                    id="signin-email"
-                    type="email"
-                    placeholder="example@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="signin-id"
+                    type="text"
+                    placeholder="아이디"
+                    value={loginId}
+                    onChange={(e) => setLoginId(e.target.value)}
                     disabled={isLoading}
                   />
                 </div>
@@ -235,13 +272,13 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">이메일</Label>
+                  <Label htmlFor="signup-id">아이디</Label>
                   <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="example@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="signup-id"
+                    type="text"
+                    placeholder="영문, 숫자, 밑줄 3-20자"
+                    value={loginId}
+                    onChange={(e) => setLoginId(e.target.value)}
                     disabled={isLoading}
                   />
                 </div>
