@@ -10,169 +10,58 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "13.0.4"
   }
   public: {
     Tables: {
       custom_themes: {
         Row: {
-          created_at: string | null
+          created_at: string
           description: string | null
           id: string
           theme_name: string
-          updated_at: string | null
-          user_id: string
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           description?: string | null
           id?: string
           theme_name: string
-          updated_at?: string | null
-          user_id: string
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           description?: string | null
           id?: string
           theme_name?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      game_progress: {
-        Row: {
-          completed: boolean | null
-          completed_at: string | null
-          created_at: string | null
-          id: string
-          questions_answered: number | null
-          questions_correct: number | null
-          theme: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          completed?: boolean | null
-          completed_at?: string | null
-          created_at?: string | null
-          id?: string
-          questions_answered?: number | null
-          questions_correct?: number | null
-          theme: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          completed?: boolean | null
-          completed_at?: string | null
-          created_at?: string | null
-          id?: string
-          questions_answered?: number | null
-          questions_correct?: number | null
-          theme?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      pets: {
-        Row: {
-          created_at: string | null
-          fully_grown_at: string | null
-          growth_stage: string
-          happiness_level: number | null
-          hatched_at: string | null
-          hunger_level: number | null
-          id: string
-          name: string
-          type: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          fully_grown_at?: string | null
-          growth_stage?: string
-          happiness_level?: number | null
-          hatched_at?: string | null
-          hunger_level?: number | null
-          id?: string
-          name: string
-          type: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          fully_grown_at?: string | null
-          growth_stage?: string
-          happiness_level?: number | null
-          hatched_at?: string | null
-          hunger_level?: number | null
-          id?: string
-          name?: string
-          type?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          created_at: string | null
-          food_count: number | null
-          id: string
-          updated_at: string | null
-          username: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          food_count?: number | null
-          id: string
-          updated_at?: string | null
-          username?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          food_count?: number | null
-          id?: string
-          updated_at?: string | null
-          username?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
       scenario_options: {
         Row: {
-          created_at: string | null
-          feedback: string | null
+          created_at: string
           id: string
           is_correct: boolean
-          option_order: number | null
-          option_text: string
+          option_order: number
           scenario_id: string
-          text: string | null
+          text: string
         }
         Insert: {
-          created_at?: string | null
-          feedback?: string | null
+          created_at?: string
           id?: string
           is_correct?: boolean
-          option_order?: number | null
-          option_text: string
+          option_order: number
           scenario_id: string
-          text?: string | null
+          text: string
         }
         Update: {
-          created_at?: string | null
-          feedback?: string | null
+          created_at?: string
           id?: string
           is_correct?: boolean
-          option_order?: number | null
-          option_text?: string
+          option_order?: number
           scenario_id?: string
-          text?: string | null
+          text?: string
         }
         Relationships: [
           {
@@ -187,74 +76,63 @@ export type Database = {
       scenarios: {
         Row: {
           category: string | null
-          created_at: string | null
-          custom_theme_id: string | null
+          created_at: string
+          difficulty_level: number | null
           id: string
           situation: string
-          theme: string
+          theme: string | null
           title: string
-          updated_at: string | null
-          user_id: string | null
+          updated_at: string
         }
         Insert: {
           category?: string | null
-          created_at?: string | null
-          custom_theme_id?: string | null
+          created_at?: string
+          difficulty_level?: number | null
           id?: string
           situation: string
-          theme: string
+          theme?: string | null
           title: string
-          updated_at?: string | null
-          user_id?: string | null
+          updated_at?: string
         }
         Update: {
           category?: string | null
-          created_at?: string | null
-          custom_theme_id?: string | null
+          created_at?: string
+          difficulty_level?: number | null
           id?: string
           situation?: string
-          theme?: string
+          theme?: string | null
           title?: string
-          updated_at?: string | null
-          user_id?: string | null
+          updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "scenarios_custom_theme_id_fkey"
-            columns: ["custom_theme_id"]
-            isOneToOne: false
-            referencedRelation: "custom_themes"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_progress: {
         Row: {
-          attempts: number | null
-          created_at: string | null
+          attempts: number
+          completed_at: string | null
+          created_at: string
           id: string
           is_correct: boolean
           scenario_id: string
-          user_id: string
-          user_session: string | null
+          user_session: string
         }
         Insert: {
-          attempts?: number | null
-          created_at?: string | null
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
           id?: string
-          is_correct: boolean
+          is_correct?: boolean
           scenario_id: string
-          user_id: string
-          user_session?: string | null
+          user_session: string
         }
         Update: {
-          attempts?: number | null
-          created_at?: string | null
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
           id?: string
           is_correct?: boolean
           scenario_id?: string
-          user_id?: string
-          user_session?: string | null
+          user_session?: string
         }
         Relationships: [
           {
@@ -268,25 +146,28 @@ export type Database = {
       }
       wrong_answers: {
         Row: {
-          correct_count: number | null
-          created_at: string | null
+          correct_count: number
+          created_at: string
           id: string
           scenario_id: string
-          user_id: string
+          updated_at: string
+          user_session: string
         }
         Insert: {
-          correct_count?: number | null
-          created_at?: string | null
+          correct_count?: number
+          created_at?: string
           id?: string
           scenario_id: string
-          user_id: string
+          updated_at?: string
+          user_session: string
         }
         Update: {
-          correct_count?: number | null
-          created_at?: string | null
+          correct_count?: number
+          created_at?: string
           id?: string
           scenario_id?: string
-          user_id?: string
+          updated_at?: string
+          user_session?: string
         }
         Relationships: [
           {

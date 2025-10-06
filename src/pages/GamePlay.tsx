@@ -258,7 +258,7 @@ const loadScenarios = async () => {
             .from('scenario_options')
             .insert([{
               scenario_id: scenarioData.id,
-              option_text: scenario.options[i],
+              text: scenario.options[i],
               option_order: i,
               is_correct: i === scenario.correctOption
             }]);
@@ -310,9 +310,9 @@ const loadScenarios = async () => {
         .insert([{
           scenario_id: currentScenario.id,
           user_session: userSession,
-          user_id: userSession,
           is_correct: isAnswerCorrect,
-          attempts: 1
+          attempts: 1,
+          completed_at: isAnswerCorrect ? new Date().toISOString() : null
         }]);
 
       // 틀린 경우 오답노트에 추가
@@ -321,7 +321,7 @@ const loadScenarios = async () => {
           .from('wrong_answers')
           .insert([{
             scenario_id: currentScenario.id,
-            user_id: userSession,
+            user_session: userSession,
             correct_count: 0
           }]);
       }
