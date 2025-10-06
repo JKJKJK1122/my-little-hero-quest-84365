@@ -86,29 +86,6 @@ const Auth = () => {
         return;
       }
 
-      // 프로필 생성
-      if (data.user) {
-        await supabase
-          .from('profiles' as any)
-          .insert([{
-            id: data.user.id,
-            username: username,
-            food_count: 0
-          }]);
-
-        // 첫 펫 (알) 지급
-        await supabase
-          .from('pets' as any)
-          .insert([{
-            user_id: data.user.id,
-            name: '첫 번째 알',
-            type: 'dragon',
-            growth_stage: 'egg',
-            hunger_level: 50,
-            happiness_level: 50
-          }]);
-      }
-
       toast({
         title: "회원가입 성공! 🎉",
         description: "환영합니다! 첫 번째 알을 받았어요!",
