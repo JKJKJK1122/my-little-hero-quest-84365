@@ -14,7 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      game_progress: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          questions_answered: number | null
+          questions_correct: number | null
+          theme: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          questions_answered?: number | null
+          questions_correct?: number | null
+          theme: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          questions_answered?: number | null
+          questions_correct?: number | null
+          theme?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pets: {
+        Row: {
+          created_at: string | null
+          fully_grown_at: string | null
+          growth_stage: string
+          happiness_level: number | null
+          hatched_at: string | null
+          hunger_level: number | null
+          id: string
+          name: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          fully_grown_at?: string | null
+          growth_stage?: string
+          happiness_level?: number | null
+          hatched_at?: string | null
+          hunger_level?: number | null
+          id?: string
+          name: string
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          fully_grown_at?: string | null
+          growth_stage?: string
+          happiness_level?: number | null
+          hatched_at?: string | null
+          hunger_level?: number | null
+          id?: string
+          name?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          food_count: number | null
+          id: string
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          food_count?: number | null
+          id: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          food_count?: number | null
+          id?: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
