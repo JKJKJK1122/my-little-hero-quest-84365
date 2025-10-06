@@ -282,6 +282,27 @@ const loadScenarios = async () => {
     setIsCorrect(isAnswerCorrect);
     setShowResult(true);
 
+    // 정답이면 먹이 지급
+    if (isAnswerCorrect) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles' as any)
+            .select('food_count')
+            .eq('id', user.id)
+            .single() as any;
+
+          await supabase
+            .from('profiles' as any)
+            .update({ food_count: ((profile as any)?.food_count || 0) + 1 })
+            .eq('id', user.id);
+        }
+      } catch (error) {
+        console.error('Error giving food reward:', error);
+      }
+    }
+
     // 진행 상황 저장
     try {
       await supabase
@@ -309,19 +330,41 @@ const loadScenarios = async () => {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (isCorrect) {
       // 정답인 경우 다음 문제로
       if (currentScenarioIndex < scenarios.length - 1) {
         setCurrentScenarioIndex(prev => prev + 1);
         resetQuestion();
       } else {
-        // 모든 문제 완료
-        toast({
-          title: "축하합니다! 🎉",
-          description: "모든 문제를 완료했습니다!",
-        });
-        navigate('/');
+        // 모든 문제 완료 - 새 알 지급
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const petTypes = ['dragon', 'cat', 'dog', 'bird'];
+            const randomType = petTypes[Math.floor(Math.random() * petTypes.length)];
+            
+            await supabase
+              .from('pets' as any)
+              .insert([{
+                user_id: user.id,
+                name: `${randomType === 'dragon' ? '드래곤' : randomType === 'cat' ? '고양이' : randomType === 'dog' ? '강아지' : '새'} ${Date.now()}`,
+                type: randomType,
+                growth_stage: 'egg',
+                hunger_level: 50,
+                happiness_level: 50
+              }]);
+
+            toast({
+              title: "축하합니다! 🎉",
+              description: "테마를 완료했어요! 새로운 알을 받았습니다! 🥚",
+            });
+          }
+        } catch (error) {
+          console.error('Error giving egg reward:', error);
+        }
+        
+        navigate('/main-menu');
       }
     } else {
       // 오답인 경우 다시 도전

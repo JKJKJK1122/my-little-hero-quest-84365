@@ -90,8 +90,24 @@ const MainMenu = () => {
           })}
         </div>
 
+        {/* 펫 키우기 섹션 */}
+        <Card className="mt-6 p-6 bg-gradient-to-r from-pink-50 to-purple-50 border-2 border-purple-200">
+          <div className="text-center mb-4">
+            <h2 className="text-xl font-bold text-primary mb-2">🐾 나의 펫 키우기 🐾</h2>
+            <p className="text-sm text-muted-foreground">
+              게임을 하고 펫을 키워보세요!
+            </p>
+          </div>
+          <Button 
+            onClick={() => navigate('/pet-care')}
+            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+          >
+            펫 보러가기 →
+          </Button>
+        </Card>
+
         {/* 하단 격려 메시지 */}
-        <div className="text-center mt-8 p-4 bg-white rounded-lg shadow-sm">
+        <div className="text-center mt-6 p-4 bg-white rounded-lg shadow-sm">
           <p className="text-primary font-medium">
             🎯 매일 조금씩 연습하면 더 똑똑해져요! 🎯
           </p>
