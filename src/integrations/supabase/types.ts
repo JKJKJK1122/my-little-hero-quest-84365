@@ -186,6 +186,7 @@ export type Database = {
       }
       scenarios: {
         Row: {
+          category: string | null
           created_at: string | null
           custom_theme_id: string | null
           id: string
@@ -196,6 +197,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          category?: string | null
           created_at?: string | null
           custom_theme_id?: string | null
           id?: string
@@ -206,6 +208,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          category?: string | null
           created_at?: string | null
           custom_theme_id?: string | null
           id?: string
