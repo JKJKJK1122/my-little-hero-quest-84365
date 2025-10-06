@@ -91,23 +91,26 @@ const Auth = () => {
     try {
       const syntheticEmail = makeEmailFromId(loginId);
 
-      // 1) 서버 함수로 사용자 생성(이메일 자동 확인, 프로필/펫 자동 생성)
-      const { data: fnData, error: fnError } = await supabase.functions.invoke('username-signup', {
-        body: { loginId, username, password },
+      // 1) 이메일 확인 없이 계정 생성 (자동승인 설정이 이미 켜져 있음)
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: syntheticEmail,
+        password,
+        options: {
+          data: { username, login_id: loginId },
+        },
       });
 
-      if (fnError) {
-        const msg = (fnError as any)?.message || '회원가입 중 오류가 발생했습니다.';
-        if (msg.includes('already')) {
+      if (signUpError) {
+        if (signUpError.message?.includes('already registered')) {
           toast({ title: '회원가입 실패', description: '이미 사용 중인 아이디예요.', variant: 'destructive' });
         } else {
-          toast({ title: '회원가입 실패', description: msg, variant: 'destructive' });
+          toast({ title: '회원가입 실패', description: signUpError.message, variant: 'destructive' });
         }
         setIsLoading(false);
         return;
       }
 
-      // 2) 바로 로그인
+      // 2) 바로 로그인 시도
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: syntheticEmail,
         password,
@@ -130,7 +133,6 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
-
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
