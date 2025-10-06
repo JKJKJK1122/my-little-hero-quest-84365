@@ -59,17 +59,15 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/main-menu`;
-      
+      // 1) 회원가입
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            username: username
-          }
-        }
+          // 자동 인증이 활성화되어도 혹시 모를 환경을 대비해 리다이렉트 유지
+          emailRedirectTo: `${window.location.origin}/main-menu`,
+          data: { username },
+        },
       });
 
       if (error) {
@@ -77,7 +75,7 @@ const Auth = () => {
           toast({
             title: "회원가입 실패",
             description: "이미 등록된 이메일입니다. 로그인해주세요.",
-            variant: "destructive"
+            variant: "destructive",
           });
         } else {
           throw error;
@@ -86,35 +84,48 @@ const Auth = () => {
         return;
       }
 
-      // 프로필 생성
-      if (data.user) {
+      // 2) 프로필/펫 초기 데이터 생성
+      const userId = data.user?.id;
+      if (userId) {
         await supabase
           .from('profiles' as any)
-          .insert([{
-            id: data.user.id,
-            username: username,
-            food_count: 0
-          }]);
+          .insert([
+            {
+              id: userId,
+              username,
+              food_count: 0,
+            },
+          ]);
 
-        // 첫 펫 (알) 지급
         await supabase
           .from('pets' as any)
-          .insert([{
-            user_id: data.user.id,
-            name: '첫 번째 알',
-            type: 'dragon',
-            growth_stage: 'egg',
-            hunger_level: 50,
-            happiness_level: 50
-          }]);
+          .insert([
+            {
+              user_id: userId,
+              name: '첫 번째 알',
+              type: 'dragon',
+              growth_stage: 'egg',
+              hunger_level: 50,
+              happiness_level: 50,
+            },
+          ]);
+      }
+
+      // 3) 즉시 로그인 (이메일 인증 대기 없이)
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (signInError) {
+        throw signInError;
       }
 
       toast({
-        title: "회원가입 성공! 🎉",
+        title: "회원가입 및 자동 로그인 완료 🎉",
         description: "환영합니다! 첫 번째 알을 받았어요!",
       });
 
-      // 자동 로그인되므로 navigate는 onAuthStateChange에서 처리됨
+      // navigate는 onAuthStateChange에서 처리됨
     } catch (error: any) {
       console.error('Sign up error:', error);
       toast({
