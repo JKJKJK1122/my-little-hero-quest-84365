@@ -26,19 +26,30 @@ const PetCare = () => {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadUserData();
+    checkAuthAndLoadData();
   }, []);
+
+  const checkAuthAndLoadData = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      toast({
+        title: "로그인이 필요해요",
+        description: "펫을 키우려면 먼저 로그인해주세요!",
+        variant: "destructive"
+      });
+      navigate('/auth');
+      return;
+    }
+
+    loadUserData();
+  };
 
   const loadUserData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast({
-          title: "로그인이 필요해요",
-          description: "펫을 키우려면 로그인해주세요!",
-          variant: "destructive"
-        });
-        navigate('/');
+        navigate('/auth');
         return;
       }
 
