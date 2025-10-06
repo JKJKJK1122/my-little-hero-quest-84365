@@ -149,24 +149,30 @@ export type Database = {
           feedback: string | null
           id: string
           is_correct: boolean
+          option_order: number | null
           option_text: string
           scenario_id: string
+          text: string | null
         }
         Insert: {
           created_at?: string | null
           feedback?: string | null
           id?: string
           is_correct?: boolean
+          option_order?: number | null
           option_text: string
           scenario_id: string
+          text?: string | null
         }
         Update: {
           created_at?: string | null
           feedback?: string | null
           id?: string
           is_correct?: boolean
+          option_order?: number | null
           option_text?: string
           scenario_id?: string
+          text?: string | null
         }
         Relationships: [
           {
@@ -226,6 +232,7 @@ export type Database = {
           is_correct: boolean
           scenario_id: string
           user_id: string
+          user_session: string | null
         }
         Insert: {
           created_at?: string | null
@@ -233,6 +240,7 @@ export type Database = {
           is_correct: boolean
           scenario_id: string
           user_id: string
+          user_session?: string | null
         }
         Update: {
           created_at?: string | null
@@ -240,6 +248,7 @@ export type Database = {
           is_correct?: boolean
           scenario_id?: string
           user_id?: string
+          user_session?: string | null
         }
         Relationships: [
           {
@@ -253,18 +262,21 @@ export type Database = {
       }
       wrong_answers: {
         Row: {
+          correct_count: number | null
           created_at: string | null
           id: string
           scenario_id: string
           user_id: string
         }
         Insert: {
+          correct_count?: number | null
           created_at?: string | null
           id?: string
           scenario_id: string
           user_id: string
         }
         Update: {
+          correct_count?: number | null
           created_at?: string | null
           id?: string
           scenario_id?: string
