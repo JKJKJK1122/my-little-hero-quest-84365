@@ -2,12 +2,19 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { BookOpen, Zap, Plus, RotateCcw, Settings } from 'lucide-react';
+import { BookOpen, Zap, Plus, RotateCcw, Settings, Heart } from 'lucide-react';
 
 const MainMenu = () => {
   const navigate = useNavigate();
 
   const menuItems = [
+    {
+      title: '펫 정원',
+      description: '귀여운 펫을 키워보세요! 먹이 모으고 성장시키기!',
+      icon: Heart,
+      color: '#ff6b9d',
+      path: '/pet-garden'
+    },
     {
       title: '메인 시나리오 게임',
       description: '상황에 맞는 올바른 행동을 선택해보세요!',
