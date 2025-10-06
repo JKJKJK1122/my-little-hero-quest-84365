@@ -34,6 +34,7 @@ const GamePlay = () => {
   const [isCorrect, setIsCorrect] = useState(false);
   const [loading, setLoading] = useState(true);
   const [difficultyLevel, setDifficultyLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
+  const [userId, setUserId] = useState<string | null>(null);
 
   // 세션 ID 생성 (임시로 timestamp 사용)
   const userSession = `session_${Date.now()}`;
@@ -258,6 +259,7 @@ const loadScenarios = async () => {
             .from('scenario_options')
             .insert([{
               scenario_id: scenarioData.id,
+              option_text: scenario.options[i],
               text: scenario.options[i],
               option_order: i,
               is_correct: i === scenario.correctOption
@@ -283,29 +285,30 @@ const loadScenarios = async () => {
     setShowResult(true);
 
     // 진행 상황 저장
-    try {
-      await supabase
-        .from('user_progress')
-        .insert([{
-          scenario_id: currentScenario.id,
-          user_session: userSession,
-          is_correct: isAnswerCorrect,
-          attempts: 1,
-          completed_at: isAnswerCorrect ? new Date().toISOString() : null
-        }]);
-
-      // 틀린 경우 오답노트에 추가
-      if (!isAnswerCorrect) {
+    if (userId) {
+      try {
         await supabase
-          .from('wrong_answers')
+          .from('user_progress')
           .insert([{
+            user_id: userId,
             scenario_id: currentScenario.id,
-            user_session: userSession,
-            correct_count: 0
+            is_correct: isAnswerCorrect,
+            attempts: 1
           }]);
+
+        // 틀린 경우 오답노트에 추가
+        if (!isAnswerCorrect) {
+          await supabase
+            .from('wrong_answers')
+            .insert([{
+              user_id: userId,
+              scenario_id: currentScenario.id,
+              correct_count: 0
+            }]);
+        }
+      } catch (error) {
+        console.error('Error saving progress:', error);
       }
-    } catch (error) {
-      console.error('Error saving progress:', error);
     }
   };
 

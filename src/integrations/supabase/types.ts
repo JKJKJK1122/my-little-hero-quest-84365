@@ -230,6 +230,7 @@ export type Database = {
       }
       user_progress: {
         Row: {
+          attempts: number | null
           created_at: string | null
           id: string
           is_correct: boolean
@@ -238,6 +239,7 @@ export type Database = {
           user_session: string | null
         }
         Insert: {
+          attempts?: number | null
           created_at?: string | null
           id?: string
           is_correct: boolean
@@ -246,6 +248,7 @@ export type Database = {
           user_session?: string | null
         }
         Update: {
+          attempts?: number | null
           created_at?: string | null
           id?: string
           is_correct?: boolean
