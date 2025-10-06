@@ -25,7 +25,7 @@ const nicknameSchema = z
   .trim()
   .min(1, { message: '닉네임을 입력해주세요.' })
   .max(20, { message: '닉네임은 최대 20자입니다.' });
-const makeEmailFromId = (id: string) => `${id}@user.local`;
+const makeEmailFromId = (id: string) => `${id}@app.internal.com`;
 
 const Auth = () => {
   const navigate = useNavigate();
