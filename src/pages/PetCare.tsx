@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Heart, Sparkles, Trophy } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface Pet {
@@ -23,69 +22,44 @@ const PetCare = () => {
   const [currentPet, setCurrentPet] = useState<Pet | null>(null);
   const [foodCount, setFoodCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    checkAuthAndLoadData();
+    loadLocalData();
   }, []);
 
-  const checkAuthAndLoadData = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      toast({
-        title: "로그인이 필요해요",
-        description: "펫을 키우려면 먼저 로그인해주세요!",
-        variant: "destructive"
-      });
-      navigate('/auth');
-      return;
-    }
-
-    loadUserData();
-  };
-
-  const loadUserData = async () => {
+  const loadLocalData = () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
+      // 로컬 스토리지에서 먹이 개수 가져오기
+      const savedFoodCount = localStorage.getItem('foodCount');
+      setFoodCount(savedFoodCount ? parseInt(savedFoodCount) : 0);
 
-      setUserId(user.id);
-
-      // 유저 프로필에서 먹이 개수 가져오기
-      const { data: profile } = await supabase
-        .from('profiles' as any)
-        .select('food_count')
-        .eq('id', user.id)
-        .single() as any;
-
-      setFoodCount((profile as any)?.food_count || 0);
-
-      // 현재 활성 펫 가져오기 (알 또는 성장 중인 펫)
-      const { data: pets } = await supabase
-        .from('pets' as any)
-        .select('*')
-        .eq('user_id', user.id)
-        .in('growth_stage', ['egg', 'baby'])
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (pets && pets.length > 0) {
-        setCurrentPet(pets[0] as any);
+      // 로컬 스토리지에서 현재 펫 가져오기
+      const savedPet = localStorage.getItem('currentPet');
+      if (savedPet) {
+        setCurrentPet(JSON.parse(savedPet));
+      } else {
+        // 첫 펫 생성
+        const newPet: Pet = {
+          id: Date.now().toString(),
+          name: '첫 번째 알',
+          type: 'dragon',
+          growth_stage: 'egg',
+          hunger_level: 50,
+          happiness_level: 50,
+        };
+        setCurrentPet(newPet);
+        localStorage.setItem('currentPet', JSON.stringify(newPet));
       }
 
       setLoading(false);
     } catch (error) {
-      console.error('Error loading user data:', error);
+      console.error('Error loading local data:', error);
       setLoading(false);
     }
   };
 
-  const feedPet = async () => {
-    if (!currentPet || !userId) return;
+  const feedPet = () => {
+    if (!currentPet) return;
     
     if (foodCount <= 0) {
       toast({
@@ -97,40 +71,30 @@ const PetCare = () => {
     }
 
     try {
-      // 먹이 개수 감소
-      const { error: profileError } = await supabase
-        .from('profiles' as any)
-        .update({ food_count: foodCount - 1 })
-        .eq('id', userId);
-
-      if (profileError) throw profileError;
-
       // 펫의 배고픔과 행복도 증가
       const newHunger = Math.min(100, currentPet.hunger_level + 20);
       const newHappiness = Math.min(100, currentPet.happiness_level + 15);
 
-      const { error: petError } = await supabase
-        .from('pets' as any)
-        .update({ 
-          hunger_level: newHunger,
-          happiness_level: newHappiness
-        })
-        .eq('id', currentPet.id);
-
-      if (petError) throw petError;
-
-      // 성장 체크 및 업데이트
-      await checkGrowth(currentPet.id, newHunger, newHappiness);
-
-      setFoodCount(prev => prev - 1);
+      const updatedPet = {
+        ...currentPet,
+        hunger_level: newHunger,
+        happiness_level: newHappiness,
+      };
       
+      setCurrentPet(updatedPet);
+      localStorage.setItem('currentPet', JSON.stringify(updatedPet));
+
+      const newFoodCount = foodCount - 1;
+      setFoodCount(newFoodCount);
+      localStorage.setItem('foodCount', newFoodCount.toString());
+
       toast({
         title: "냠냠! 🍎",
         description: `${currentPet.name}이(가) 기뻐해요!`,
       });
 
-      // 데이터 새로고침
-      loadUserData();
+      // 성장 체크
+      checkGrowth(updatedPet);
     } catch (error) {
       console.error('Error feeding pet:', error);
       toast({
@@ -140,38 +104,56 @@ const PetCare = () => {
     }
   };
 
-  const checkGrowth = async (petId: string, hunger: number, happiness: number) => {
-    if (!currentPet) return;
-
+  const checkGrowth = (pet: Pet) => {
     // 알에서 아기로 성장 (배고픔 > 60, 행복도 > 60)
-    if (currentPet.growth_stage === 'egg' && hunger > 60 && happiness > 60) {
-      await supabase
-        .from('pets' as any)
-        .update({ 
-          growth_stage: 'baby',
-          hatched_at: new Date().toISOString()
-        })
-        .eq('id', petId);
+    if (pet.growth_stage === 'egg' && pet.hunger_level > 60 && pet.happiness_level > 60) {
+      const updatedPet = {
+        ...pet,
+        growth_stage: 'baby' as const,
+        hatched_at: new Date().toISOString()
+      };
+      setCurrentPet(updatedPet);
+      localStorage.setItem('currentPet', JSON.stringify(updatedPet));
 
       toast({
         title: "축하합니다! 🎉",
-        description: `${currentPet.name}이(가) 알에서 깨어났어요!`,
+        description: `${pet.name}이(가) 알에서 깨어났어요!`,
       });
     }
     // 아기에서 어른으로 성장 (배고픔 > 80, 행복도 > 80)
-    else if (currentPet.growth_stage === 'baby' && hunger > 80 && happiness > 80) {
-      await supabase
-        .from('pets' as any)
-        .update({ 
-          growth_stage: 'adult',
-          fully_grown_at: new Date().toISOString()
-        })
-        .eq('id', petId);
+    else if (pet.growth_stage === 'baby' && pet.hunger_level > 80 && pet.happiness_level > 80) {
+      const updatedPet = {
+        ...pet,
+        growth_stage: 'adult' as const,
+        fully_grown_at: new Date().toISOString()
+      };
+      setCurrentPet(updatedPet);
+      localStorage.setItem('currentPet', JSON.stringify(updatedPet));
+
+      // 컬렉션에 추가
+      const collection = localStorage.getItem('petCollection');
+      const petCollection = collection ? JSON.parse(collection) : [];
+      petCollection.push(updatedPet);
+      localStorage.setItem('petCollection', JSON.stringify(petCollection));
 
       toast({
         title: "축하합니다! 🌟",
-        description: `${currentPet.name}이(가) 다 자랐어요!`,
+        description: `${pet.name}이(가) 다 자랐어요!`,
       });
+
+      // 새로운 알 생성
+      setTimeout(() => {
+        const newPet: Pet = {
+          id: Date.now().toString(),
+          name: '새로운 알',
+          type: ['dragon', 'cat', 'dog', 'bird'][Math.floor(Math.random() * 4)],
+          growth_stage: 'egg',
+          hunger_level: 50,
+          happiness_level: 50,
+        };
+        setCurrentPet(newPet);
+        localStorage.setItem('currentPet', JSON.stringify(newPet));
+      }, 2000);
     }
   };
 
@@ -213,7 +195,7 @@ const PetCare = () => {
           <Button 
             variant="ghost" 
             size="icon"
-            onClick={() => navigate('/main-menu')}
+            onClick={() => navigate('/')}
             className="rounded-full bg-white shadow-md"
           >
             <ArrowLeft size={20} />
@@ -318,7 +300,7 @@ const PetCare = () => {
             <p className="text-muted-foreground mb-4">
               테마 게임을 완료하면 새로운 알을 받을 수 있어요!
             </p>
-            <Button onClick={() => navigate('/main-game')} className="w-full">
+            <Button onClick={() => navigate('/')} className="w-full">
               게임하러 가기
             </Button>
           </Card>

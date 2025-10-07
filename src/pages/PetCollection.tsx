@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Star } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 interface Pet {
   id: string;
@@ -19,39 +18,17 @@ const PetCollection = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuthAndLoadPets();
+    loadPetCollection();
   }, []);
 
-  const checkAuthAndLoadPets = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      navigate('/auth');
-      return;
-    }
-
-    loadAdultPets();
-  };
-
-  const loadAdultPets = async () => {
+  const loadPetCollection = () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
-
-      const { data: pets } = await supabase
-        .from('pets' as any)
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('growth_stage', 'adult')
-        .order('fully_grown_at', { ascending: false });
-
-      setAdultPets((pets || []) as any);
+      const collection = localStorage.getItem('petCollection');
+      const pets = collection ? JSON.parse(collection) : [];
+      setAdultPets(pets.filter((pet: Pet) => pet.growth_stage === 'adult'));
       setLoading(false);
     } catch (error) {
-      console.error('Error loading adult pets:', error);
+      console.error('Error loading pet collection:', error);
       setLoading(false);
     }
   };
@@ -131,7 +108,7 @@ const PetCollection = () => {
             <p className="text-muted-foreground mb-4">
               게임을 완료하고 펫을 키워보세요!
             </p>
-            <Button onClick={() => navigate('/main-game')} className="w-full">
+            <Button onClick={() => navigate('/')} className="w-full">
               게임하러 가기
             </Button>
           </Card>
