@@ -223,6 +223,16 @@ const CustomGamePlay = () => {
     setIsCorrect(isAnswerCorrect);
     setShowResult(true);
 
+    // 정답이면 먹이 지급 (로컬스토리지)
+    if (isAnswerCorrect) {
+      try {
+        const currentFood = parseInt(localStorage.getItem('foodCount') || '0');
+        localStorage.setItem('foodCount', (currentFood + 1).toString());
+      } catch (error) {
+        console.error('Error giving food reward:', error);
+      }
+    }
+
     // 진행 상황 저장
     try {
       await supabase

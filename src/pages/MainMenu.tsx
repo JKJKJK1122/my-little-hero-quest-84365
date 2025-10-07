@@ -148,7 +148,7 @@ const MainMenu = () => {
             </p>
           </div>
           <Button 
-            onClick={() => navigate('/pet-care')}
+            onClick={() => navigate('/pet-storage')}
             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
           >
             펫 보러가기 →
