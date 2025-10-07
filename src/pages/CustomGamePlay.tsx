@@ -260,16 +260,44 @@ const CustomGamePlay = () => {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (isCorrect) {
       if (currentScenarioIndex < scenarios.length - 1) {
         setCurrentScenarioIndex(prev => prev + 1);
         resetQuestion();
       } else {
-        toast({
-          title: "🎊 비밀 임무 완료!",
-          description: "모든 임무를 성공적으로 수행했습니다!",
-        });
+        // 모든 문제 완료 - 새 알 지급 (로컬스토리지)
+        try {
+          const { getRandomPet } = await import('@/utils/petUtils');
+          const randomPet = getRandomPet();
+          
+          const newPet = {
+            id: Date.now().toString(),
+            name: `${randomPet.name} 알`,
+            type: randomPet.type,
+            tier: randomPet.tier,
+            growth_stage: 'egg',
+            hunger_level: 0,
+            happiness_level: 0,
+            feedCount: 0,
+            created_at: new Date().toISOString()
+          };
+
+          // 펫 보관함에 추가
+          const storage = localStorage.getItem('petStorage');
+          const petStorage = storage ? JSON.parse(storage) : [];
+          petStorage.push(newPet);
+          localStorage.setItem('petStorage', JSON.stringify(petStorage));
+
+          const tierText = randomPet.tier === 1 ? '전설' : randomPet.tier === 2 ? '희귀' : '일반';
+          toast({
+            title: "🎊 비밀 임무 완료!",
+            description: `모든 임무를 성공적으로 수행했습니다! ${tierText} 등급 ${randomPet.name} 알을 받았습니다! 🥚`,
+          });
+        } catch (error) {
+          console.error('Error giving egg reward:', error);
+        }
+        
         navigate('/secret-mission');
       }
     } else {
