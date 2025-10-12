@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import MainMenu from './MainMenu';
 
 const MainMenuWrapper = () => {
@@ -7,10 +8,18 @@ const MainMenuWrapper = () => {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    checkTest();
+    checkAuthAndTest();
   }, []);
 
-  const checkTest = async () => {
+  const checkAuthAndTest = async () => {
+    // 로그인 확인
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      navigate('/auth');
+      return;
+    }
+
     // 문해력 테스트를 완료했는지 확인
     const isTestCompleted = localStorage.getItem('literacyTestCompleted');
     

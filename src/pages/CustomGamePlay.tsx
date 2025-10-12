@@ -239,9 +239,10 @@ const CustomGamePlay = () => {
         .from('user_progress')
         .insert([{
           scenario_id: currentScenario.id,
-          user_id: 'anonymous',
+          user_session: userSession,
           is_correct: isAnswerCorrect,
-          attempts: 1
+          attempts: 1,
+          completed_at: isAnswerCorrect ? new Date().toISOString() : null
         }]);
 
       // 틀린 경우 오답노트에 추가
@@ -250,7 +251,7 @@ const CustomGamePlay = () => {
           .from('wrong_answers')
           .insert([{
             scenario_id: currentScenario.id,
-            user_id: 'anonymous',
+            user_session: userSession,
             correct_count: 0
           }]);
       }
@@ -259,44 +260,16 @@ const CustomGamePlay = () => {
     }
   };
 
-  const handleNext = async () => {
+  const handleNext = () => {
     if (isCorrect) {
       if (currentScenarioIndex < scenarios.length - 1) {
         setCurrentScenarioIndex(prev => prev + 1);
         resetQuestion();
       } else {
-        // 모든 문제 완료 - 새 알 지급 (로컬스토리지)
-        try {
-          const { getRandomPet } = await import('@/utils/petUtils');
-          const randomPet = getRandomPet();
-          
-          const newPet = {
-            id: Date.now().toString(),
-            name: `${randomPet.name} 알`,
-            type: randomPet.type,
-            tier: randomPet.tier,
-            growth_stage: 'egg',
-            hunger_level: 0,
-            happiness_level: 0,
-            feedCount: 0,
-            created_at: new Date().toISOString()
-          };
-
-          // 펫 보관함에 추가
-          const storage = localStorage.getItem('petStorage');
-          const petStorage = storage ? JSON.parse(storage) : [];
-          petStorage.push(newPet);
-          localStorage.setItem('petStorage', JSON.stringify(petStorage));
-
-          const tierText = randomPet.tier === 1 ? '전설' : randomPet.tier === 2 ? '희귀' : '일반';
-          toast({
-            title: "🎊 비밀 임무 완료!",
-            description: `모든 임무를 성공적으로 수행했습니다! ${tierText} 등급 ${randomPet.name} 알을 받았습니다! 🥚`,
-          });
-        } catch (error) {
-          console.error('Error giving egg reward:', error);
-        }
-        
+        toast({
+          title: "🎊 비밀 임무 완료!",
+          description: "모든 임무를 성공적으로 수행했습니다!",
+        });
         navigate('/secret-mission');
       }
     } else {

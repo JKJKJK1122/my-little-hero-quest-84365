@@ -258,7 +258,7 @@ const loadScenarios = async () => {
             .from('scenario_options')
             .insert([{
               scenario_id: scenarioData.id,
-              option_text: scenario.options[i],
+              text: scenario.options[i],
               option_order: i,
               is_correct: i === scenario.correctOption
             }]);
@@ -298,9 +298,10 @@ const loadScenarios = async () => {
         .from('user_progress')
         .insert([{
           scenario_id: currentScenario.id,
-          user_id: 'anonymous',
+          user_session: userSession,
           is_correct: isAnswerCorrect,
-          attempts: 1
+          attempts: 1,
+          completed_at: isAnswerCorrect ? new Date().toISOString() : null
         }]);
 
       // 틀린 경우 오답노트에 추가
@@ -309,7 +310,7 @@ const loadScenarios = async () => {
           .from('wrong_answers')
           .insert([{
             scenario_id: currentScenario.id,
-            user_id: 'anonymous',
+            user_session: userSession,
             correct_count: 0
           }]);
       }
@@ -327,14 +328,13 @@ const loadScenarios = async () => {
       } else {
         // 모든 문제 완료 - 새 알 지급 (로컬스토리지)
         try {
-          const { getRandomPet, getPetByType } = await import('@/utils/petUtils');
-          const randomPet = getRandomPet();
+          const petTypes = ['dragon', 'cat', 'dog', 'bird'];
+          const randomType = petTypes[Math.floor(Math.random() * petTypes.length)];
           
           const newPet = {
             id: Date.now().toString(),
-            name: `${randomPet.name} 알`,
-            type: randomPet.type,
-            tier: randomPet.tier,
+            name: `${randomType === 'dragon' ? '드래곤' : randomType === 'cat' ? '고양이' : randomType === 'dog' ? '강아지' : '새'} 알`,
+            type: randomType,
             growth_stage: 'egg',
             hunger_level: 0,
             happiness_level: 0,
@@ -348,10 +348,9 @@ const loadScenarios = async () => {
           petStorage.push(newPet);
           localStorage.setItem('petStorage', JSON.stringify(petStorage));
 
-          const tierText = randomPet.tier === 1 ? '전설' : randomPet.tier === 2 ? '희귀' : '일반';
           toast({
             title: "축하합니다! 🎉",
-            description: `테마를 완료했어요! ${tierText} 등급 ${randomPet.name} 알을 받았습니다! 🥚`,
+            description: "테마를 완료했어요! 새로운 알을 받았습니다! 🥚",
           });
         } catch (error) {
           console.error('Error giving egg reward:', error);

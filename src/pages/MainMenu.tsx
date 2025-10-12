@@ -2,19 +2,48 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { BookOpen, Zap, Plus, RotateCcw, Settings } from 'lucide-react';
+import { BookOpen, Zap, Plus, RotateCcw, Settings, LogOut } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const MainMenu = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState<string>('사용자');
+  const { toast } = useToast();
+  const [username, setUsername] = useState<string>('');
 
   useEffect(() => {
-    // Load username from localStorage
-    const savedUsername = localStorage.getItem('username');
-    if (savedUsername) {
-      setUsername(savedUsername);
-    }
+    loadUserProfile();
   }, []);
+
+  const loadUserProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles' as any)
+          .select('username')
+          .eq('id', user.id)
+          .single() as any;
+
+        setUsername((profile as any)?.username || '사용자');
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "로그아웃 완료",
+        description: "다음에 또 만나요! 👋",
+      });
+      navigate('/auth');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   const menuItems = [
     {
@@ -59,6 +88,14 @@ const MainMenu = () => {
             className="absolute top-4 right-4 rounded-full bg-white shadow-md"
           >
             <Settings size={20} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleLogout}
+            className="absolute top-4 left-4 rounded-full bg-white shadow-md"
+          >
+            <LogOut size={20} />
           </Button>
           <h1 className="text-3xl font-bold text-primary mb-2">
             🌟 똑똑한 선택왕 🌟

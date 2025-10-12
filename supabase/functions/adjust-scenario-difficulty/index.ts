@@ -7,8 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseKey = Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!;
+const supabaseUrl = 'https://xufneikpvakgomsncqsp.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1Zm5laWtwdmFrZ29tc25jcXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzMjkyOTUsImV4cCI6MjA3MDkwNTI5NX0.klkp0MzI6ZnEiVuW8tgydZNzszJ_NYJTOzmBWAgUQ20';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -21,64 +21,8 @@ serve(async (req) => {
       throw new Error('OpenAI API Key is not set');
     }
 
-    // Check request size limit
-    const contentLength = req.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > 10000) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Request too large - maximum 10KB allowed' 
-      }), {
-        status: 413,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const requestBody = await req.json();
-    const { scenarios, difficulty } = requestBody;
-
-    // Input validation
-    if (!Array.isArray(scenarios)) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'scenarios must be an array' 
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (scenarios.length === 0) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'At least one scenario is required' 
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (scenarios.length > 20) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Too many scenarios - maximum 20 scenarios allowed at once' 
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const validDifficulties = ['beginner', 'intermediate', 'advanced'];
-    if (difficulty && !validDifficulties.includes(difficulty)) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'difficulty must be one of: beginner, intermediate, advanced' 
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const { scenarios, difficulty } = await req.json();
 
     console.log('Adjusting scenario difficulty:', { difficulty, scenarioCount: scenarios.length });
 
@@ -213,12 +157,11 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Error in adjust-scenario-difficulty function:', error);
-    const message = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ 
       success: false, 
-      error: message 
+      error: error.message 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

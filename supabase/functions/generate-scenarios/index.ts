@@ -7,8 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseKey = Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!;
+const supabaseUrl = 'https://xufneikpvakgomsncqsp.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1Zm5laWtwdmFrZ29tc25jcXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzMjkyOTUsImV4cCI6MjA3MDkwNTI5NX0.klkp0MzI6ZnEiVuW8tgydZNzszJ_NYJTOzmBWAgUQ20';
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -22,56 +22,10 @@ serve(async (req) => {
       throw new Error('OpenAI API Key is not set');
     }
 
-    // Check request size limit
-    const contentLength = req.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > 10000) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Request too large - maximum 10KB allowed' 
-      }), {
-        status: 413,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const requestBody = await req.json();
-    const { problemDescription } = requestBody;
-
-    // Input validation
-    if (!problemDescription || typeof problemDescription !== 'string') {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'problemDescription is required and must be a string' 
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const trimmedDescription = problemDescription.trim();
-    if (trimmedDescription.length < 10) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Description too short - minimum 10 characters required' 
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (trimmedDescription.length > 500) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Description too long - maximum 500 characters allowed' 
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const { problemDescription } = await req.json();
 
-    console.log('Generating scenarios for problem:', trimmedDescription);
+    console.log('Generating scenarios for problem:', problemDescription);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -96,7 +50,7 @@ serve(async (req) => {
           },
           { 
             role: 'user', 
-            content: `다음 문제 상황에 대한 교육 시나리오 10개를 만들어주세요: ${trimmedDescription}` 
+            content: `다음 문제 상황에 대한 교육 시나리오 10개를 만들어주세요: ${problemDescription}` 
           }
         ],
         max_tokens: 3000,
@@ -144,7 +98,7 @@ serve(async (req) => {
           },
           { 
             role: 'user', 
-            content: `다음 상황에 대한 테마 이름을 만들어주세요: ${trimmedDescription}` 
+            content: `다음 상황에 대한 테마 이름을 만들어주세요: ${problemDescription}` 
           }
         ],
         max_tokens: 100,
@@ -160,7 +114,7 @@ serve(async (req) => {
       .from('custom_themes')
       .insert([{
         theme_name: themeName,
-        description: trimmedDescription
+        description: problemDescription
       }])
       .select()
       .single();
@@ -219,12 +173,11 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Error in generate-scenarios function:', error);
-    const message = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ 
       success: false, 
-      error: message 
+      error: error.message 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import LiteracyTest from "./pages/LiteracyTest";
 import DifficultySettings from "./pages/DifficultySettings";
 import MainMenu from "./pages/MainMenu";
@@ -28,7 +29,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          
+          <Route path="/auth" element={<Auth />} />
           <Route path="/literacy-test" element={<LiteracyTest />} />
           <Route path="/difficulty-settings" element={<DifficultySettings />} />
           <Route path="/main-menu" element={<MainMenu />} />
