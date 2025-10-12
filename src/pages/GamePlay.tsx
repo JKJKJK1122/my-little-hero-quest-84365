@@ -282,6 +282,16 @@ const loadScenarios = async () => {
     setIsCorrect(isAnswerCorrect);
     setShowResult(true);
 
+    // 정답이면 먹이 지급 (로컬스토리지)
+    if (isAnswerCorrect) {
+      try {
+        const currentFood = parseInt(localStorage.getItem('foodCount') || '0');
+        localStorage.setItem('foodCount', (currentFood + 1).toString());
+      } catch (error) {
+        console.error('Error giving food reward:', error);
+      }
+    }
+
     // 진행 상황 저장
     try {
       await supabase
@@ -309,19 +319,46 @@ const loadScenarios = async () => {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (isCorrect) {
       // 정답인 경우 다음 문제로
       if (currentScenarioIndex < scenarios.length - 1) {
         setCurrentScenarioIndex(prev => prev + 1);
         resetQuestion();
       } else {
-        // 모든 문제 완료
-        toast({
-          title: "축하합니다! 🎉",
-          description: "모든 문제를 완료했습니다!",
-        });
-        navigate('/');
+        // 모든 문제 완료 - 새 알 지급 (로컬스토리지)
+        try {
+          const { getRandomPet, getPetByType } = await import('@/utils/petUtils');
+          const randomPet = getRandomPet();
+          
+          const newPet = {
+            id: Date.now().toString(),
+            name: `${randomPet.name} 알`,
+            type: randomPet.type,
+            tier: randomPet.tier,
+            growth_stage: 'egg',
+            hunger_level: 0,
+            happiness_level: 0,
+            feedCount: 0,
+            created_at: new Date().toISOString()
+          };
+
+          // 펫 보관함에 추가
+          const storage = localStorage.getItem('petStorage');
+          const petStorage = storage ? JSON.parse(storage) : [];
+          petStorage.push(newPet);
+          localStorage.setItem('petStorage', JSON.stringify(petStorage));
+
+          const tierText = randomPet.tier === 1 ? '전설' : randomPet.tier === 2 ? '희귀' : '일반';
+          toast({
+            title: "축하합니다! 🎉",
+            description: `테마를 완료했어요! ${tierText} 등급 ${randomPet.name} 알을 받았습니다! 🥚`,
+          });
+        } catch (error) {
+          console.error('Error giving egg reward:', error);
+        }
+        
+        navigate('/main-menu');
       }
     } else {
       // 오답인 경우 다시 도전
