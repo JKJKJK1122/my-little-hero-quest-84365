@@ -307,6 +307,26 @@ const loadScenarios = async () => {
           is_correct: correct,
           attempts: 1
         }]);
+
+      // 오답인 경우 wrong_answers 테이블에 추가
+      if (!correct) {
+        const { data: existing } = await supabase
+          .from('wrong_answers')
+          .select('id')
+          .eq('scenario_id', currentScenario.id)
+          .eq('user_id', 'anonymous')
+          .single();
+
+        if (!existing) {
+          await supabase
+            .from('wrong_answers')
+            .insert([{
+              scenario_id: currentScenario.id,
+              user_id: 'anonymous',
+              correct_count: 0
+            }]);
+        }
+      }
     } catch (error) {
       console.error('Error saving progress:', error);
     }
