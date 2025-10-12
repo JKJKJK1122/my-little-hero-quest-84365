@@ -1,1 +1,7 @@
 project_id = "thrzbwgvjrwtwmejuwvr"
+
+[functions.generate-scenarios]
+verify_jwt = false
+
+[functions.adjust-scenario-difficulty]
+verify_jwt = false

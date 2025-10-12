@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import MainMenu from './MainMenu';
 
 const MainMenuWrapper = () => {
@@ -8,10 +7,10 @@ const MainMenuWrapper = () => {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    checkAuthAndTest();
+    checkTest();
   }, []);
 
-  const checkAuthAndTest = async () => {
+  const checkTest = async () => {
     // 문해력 테스트를 완료했는지 확인
     const isTestCompleted = localStorage.getItem('literacyTestCompleted');
     
