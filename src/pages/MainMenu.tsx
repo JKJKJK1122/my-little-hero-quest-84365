@@ -1,49 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { BookOpen, Zap, Plus, RotateCcw, Settings, LogOut } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { BookOpen, Zap, Plus, RotateCcw, Settings } from 'lucide-react';
 
 const MainMenu = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [username, setUsername] = useState<string>('');
-
-  useEffect(() => {
-    loadUserProfile();
-  }, []);
-
-  const loadUserProfile = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles' as any)
-          .select('username')
-          .eq('id', user.id)
-          .single() as any;
-
-        setUsername((profile as any)?.username || '사용자');
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast({
-        title: "로그아웃 완료",
-        description: "다음에 또 만나요! 👋",
-      });
-      navigate('/auth');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
 
   const menuItems = [
     {
@@ -89,21 +51,10 @@ const MainMenu = () => {
           >
             <Settings size={20} />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleLogout}
-            className="absolute top-4 left-4 rounded-full bg-white shadow-md"
-          >
-            <LogOut size={20} />
-          </Button>
           <h1 className="text-3xl font-bold text-primary mb-2">
             🌟 똑똑한 선택왕 🌟
           </h1>
           <p className="text-muted-foreground text-lg">
-            {username}님, 환영합니다!
-          </p>
-          <p className="text-muted-foreground text-sm">
             올바른 선택을 연습해보아요!
           </p>
         </div>
@@ -139,24 +90,8 @@ const MainMenu = () => {
           })}
         </div>
 
-        {/* 펫 키우기 섹션 */}
-        <Card className="mt-6 p-6 bg-gradient-to-r from-pink-50 to-purple-50 border-2 border-purple-200">
-          <div className="text-center mb-4">
-            <h2 className="text-xl font-bold text-primary mb-2">🐾 나의 펫 키우기 🐾</h2>
-            <p className="text-sm text-muted-foreground">
-              게임을 하고 펫을 키워보세요!
-            </p>
-          </div>
-          <Button 
-            onClick={() => navigate('/pet-storage')}
-            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-          >
-            펫 보러가기 →
-          </Button>
-        </Card>
-
         {/* 하단 격려 메시지 */}
-        <div className="text-center mt-6 p-4 bg-white rounded-lg shadow-sm">
+        <div className="text-center mt-8 p-4 bg-white rounded-lg shadow-sm">
           <p className="text-primary font-medium">
             🎯 매일 조금씩 연습하면 더 똑똑해져요! 🎯
           </p>

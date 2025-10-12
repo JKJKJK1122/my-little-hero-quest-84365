@@ -13,9 +13,6 @@ import AddScenario from "./pages/AddScenario";
 import SecretMission from "./pages/SecretMission";
 import CustomGamePlay from "./pages/CustomGamePlay";
 import WrongAnswers from "./pages/WrongAnswers";
-import PetCare from "./pages/PetCare";
-import PetCollection from "./pages/PetCollection";
-import PetStorage from "./pages/PetStorage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,7 +25,6 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          
           <Route path="/literacy-test" element={<LiteracyTest />} />
           <Route path="/difficulty-settings" element={<DifficultySettings />} />
           <Route path="/main-menu" element={<MainMenu />} />
@@ -38,9 +34,6 @@ const App = () => (
           <Route path="/secret-mission" element={<SecretMission />} />
           <Route path="/custom-game/:themeName" element={<CustomGamePlay />} />
           <Route path="/wrong-answers" element={<WrongAnswers />} />
-          <Route path="/pet-care" element={<PetCare />} />
-          <Route path="/pet-collection" element={<PetCollection />} />
-          <Route path="/pet-storage" element={<PetStorage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
