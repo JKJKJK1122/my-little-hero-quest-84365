@@ -58,14 +58,7 @@ const Index = () => {
         <Button 
           size="lg" 
           className="w-full text-lg py-6 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 mb-4"
-          onClick={() => {
-            const testCompleted = localStorage.getItem('literacyTestCompleted');
-            if (testCompleted === 'true') {
-              navigate('/main-menu');
-            } else {
-              navigate('/literacy-test');
-            }
-          }}
+          onClick={() => navigate('/literacy-test')}
         >
           게임 시작하기 →
         </Button>
@@ -74,7 +67,7 @@ const Index = () => {
           variant="outline"
           size="lg" 
           className="w-full text-lg py-6"
-          onClick={() => navigate('/pet-storage')}
+          onClick={() => navigate('/pet-care')}
         >
           🐾 펫 보러가기
         </Button>
