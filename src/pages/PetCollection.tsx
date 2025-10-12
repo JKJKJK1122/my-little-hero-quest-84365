@@ -65,7 +65,7 @@ const PetCollection = () => {
           <Button 
             variant="ghost" 
             size="icon"
-            onClick={() => navigate('/pet-care')}
+            onClick={() => navigate('/main-menu')}
             className="rounded-full bg-white shadow-md"
           >
             <ArrowLeft size={20} />

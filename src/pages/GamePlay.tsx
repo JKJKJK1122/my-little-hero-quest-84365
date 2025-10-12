@@ -282,22 +282,11 @@ const loadScenarios = async () => {
     setIsCorrect(isAnswerCorrect);
     setShowResult(true);
 
-    // 정답이면 먹이 지급
+    // 정답이면 먹이 지급 (로컬스토리지)
     if (isAnswerCorrect) {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile } = await supabase
-            .from('profiles' as any)
-            .select('food_count')
-            .eq('id', user.id)
-            .single() as any;
-
-          await supabase
-            .from('profiles' as any)
-            .update({ food_count: ((profile as any)?.food_count || 0) + 1 })
-            .eq('id', user.id);
-        }
+        const currentFood = parseInt(localStorage.getItem('foodCount') || '0');
+        localStorage.setItem('foodCount', (currentFood + 1).toString());
       } catch (error) {
         console.error('Error giving food reward:', error);
       }
@@ -337,29 +326,34 @@ const loadScenarios = async () => {
         setCurrentScenarioIndex(prev => prev + 1);
         resetQuestion();
       } else {
-        // 모든 문제 완료 - 새 알 지급
+        // 모든 문제 완료 - 새 알 지급 (로컬스토리지)
         try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            const petTypes = ['dragon', 'cat', 'dog', 'bird'];
-            const randomType = petTypes[Math.floor(Math.random() * petTypes.length)];
-            
-            await supabase
-              .from('pets' as any)
-              .insert([{
-                user_id: user.id,
-                name: `${randomType === 'dragon' ? '드래곤' : randomType === 'cat' ? '고양이' : randomType === 'dog' ? '강아지' : '새'} ${Date.now()}`,
-                type: randomType,
-                growth_stage: 'egg',
-                hunger_level: 50,
-                happiness_level: 50
-              }]);
+          const { getRandomPet, getPetByType } = await import('@/utils/petUtils');
+          const randomPet = getRandomPet();
+          
+          const newPet = {
+            id: Date.now().toString(),
+            name: `${randomPet.name} 알`,
+            type: randomPet.type,
+            tier: randomPet.tier,
+            growth_stage: 'egg',
+            hunger_level: 0,
+            happiness_level: 0,
+            feedCount: 0,
+            created_at: new Date().toISOString()
+          };
 
-            toast({
-              title: "축하합니다! 🎉",
-              description: "테마를 완료했어요! 새로운 알을 받았습니다! 🥚",
-            });
-          }
+          // 펫 보관함에 추가
+          const storage = localStorage.getItem('petStorage');
+          const petStorage = storage ? JSON.parse(storage) : [];
+          petStorage.push(newPet);
+          localStorage.setItem('petStorage', JSON.stringify(petStorage));
+
+          const tierText = randomPet.tier === 1 ? '전설' : randomPet.tier === 2 ? '희귀' : '일반';
+          toast({
+            title: "축하합니다! 🎉",
+            description: `테마를 완료했어요! ${tierText} 등급 ${randomPet.name} 알을 받았습니다! 🥚`,
+          });
         } catch (error) {
           console.error('Error giving egg reward:', error);
         }
