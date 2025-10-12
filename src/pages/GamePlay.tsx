@@ -328,13 +328,14 @@ const loadScenarios = async () => {
       } else {
         // 모든 문제 완료 - 새 알 지급 (로컬스토리지)
         try {
-          const petTypes = ['dragon', 'cat', 'dog', 'bird'];
-          const randomType = petTypes[Math.floor(Math.random() * petTypes.length)];
+          const { getRandomPet, getPetByType } = await import('@/utils/petUtils');
+          const randomPet = getRandomPet();
           
           const newPet = {
             id: Date.now().toString(),
-            name: `${randomType === 'dragon' ? '드래곤' : randomType === 'cat' ? '고양이' : randomType === 'dog' ? '강아지' : '새'} 알`,
-            type: randomType,
+            name: `${randomPet.name} 알`,
+            type: randomPet.type,
+            tier: randomPet.tier,
             growth_stage: 'egg',
             hunger_level: 0,
             happiness_level: 0,
@@ -348,9 +349,10 @@ const loadScenarios = async () => {
           petStorage.push(newPet);
           localStorage.setItem('petStorage', JSON.stringify(petStorage));
 
+          const tierText = randomPet.tier === 1 ? '전설' : randomPet.tier === 2 ? '희귀' : '일반';
           toast({
             title: "축하합니다! 🎉",
-            description: "테마를 완료했어요! 새로운 알을 받았습니다! 🥚",
+            description: `테마를 완료했어요! ${tierText} 등급 ${randomPet.name} 알을 받았습니다! 🥚`,
           });
         } catch (error) {
           console.error('Error giving egg reward:', error);

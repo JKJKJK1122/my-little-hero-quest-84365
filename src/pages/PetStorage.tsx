@@ -3,15 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogHeader } from '@/components/ui/dialog';
-import { ArrowLeft, Star, Plus, X, Edit2, Heart, Sparkles } from 'lucide-react';
+import { ArrowLeft, Star, Plus, X, Edit2, Heart, Sparkles, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import { getPetEmoji, getPetByType, getTierText, getTierColor } from '@/utils/petUtils';
 
 interface Pet {
   id: string;
   name: string;
   type: string;
+  tier?: 1 | 2 | 3;
   growth_stage: 'egg' | 'baby' | 'teen' | 'adult';
   hunger_level: number;
   happiness_level: number;
@@ -32,6 +34,11 @@ const PetStorage = () => {
   const [loading, setLoading] = useState(true);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState('');
+  const [deleteDialog, setDeleteDialog] = useState<{open: boolean; pet: Pet | null}>({
+    open: false,
+    pet: null
+  });
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -53,27 +60,6 @@ const PetStorage = () => {
     } catch (error) {
       console.error('Error loading data:', error);
       setLoading(false);
-    }
-  };
-
-  const getPetEmoji = (pet: Pet) => {
-    switch (pet.growth_stage) {
-      case 'egg':
-        return '🥚';
-      case 'baby':
-        return pet.type === 'dragon' ? '🐲' : 
-               pet.type === 'cat' ? '🐱' :
-               pet.type === 'dog' ? '🐶' : '🐣';
-      case 'teen':
-        return pet.type === 'dragon' ? '🐉' : 
-               pet.type === 'cat' ? '😺' :
-               pet.type === 'dog' ? '🐕' : '🐦';
-      case 'adult':
-        return pet.type === 'dragon' ? '🐲✨' : 
-               pet.type === 'cat' ? '🐈' :
-               pet.type === 'dog' ? '🦮' : '🦜';
-      default:
-        return '🥚';
     }
   };
 
@@ -208,6 +194,54 @@ const PetStorage = () => {
     return (pet.feedCount / 5) * 100;
   };
 
+  const handleDeletePet = (e: React.MouseEvent, pet: Pet) => {
+    e.stopPropagation();
+    setDeleteDialog({ open: true, pet });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteDialog.pet) return;
+    
+    try {
+      setDeleting(true);
+      
+      // 펫 삭제
+      const updatedStorage = petStorage.filter(p => p.id !== deleteDialog.pet!.id);
+      setPetStorage(updatedStorage);
+      localStorage.setItem('petStorage', JSON.stringify(updatedStorage));
+
+      // 활성 펫 목록에서도 제거
+      const updatedActivePets = activePets.filter(id => id !== deleteDialog.pet!.id);
+      setActivePets(updatedActivePets);
+      localStorage.setItem('activePets', JSON.stringify(updatedActivePets));
+
+      // 선택된 펫이면 다이얼로그도 닫기
+      if (selectedPet?.id === deleteDialog.pet!.id) {
+        setSelectedPet(null);
+      }
+
+      toast({
+        title: "삭제 완료! 🗑️",
+        description: `${deleteDialog.pet!.name}을(를) 삭제했습니다.`,
+      });
+
+      setDeleteDialog({ open: false, pet: null });
+    } catch (error) {
+      console.error('Error deleting pet:', error);
+      toast({
+        title: "삭제 실패",
+        description: "펫을 삭제하는 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialog({ open: false, pet: null });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-purple-50 p-4 flex items-center justify-center">
@@ -274,7 +308,7 @@ const PetStorage = () => {
                       <X size={14} />
                     </Button>
                     <div className="text-center">
-                      <div className="text-4xl mb-1">{getPetEmoji(pet)}</div>
+                      <div className="text-4xl mb-1">{getPetEmoji(pet.type, pet.growth_stage)}</div>
                       <h3 className="font-bold text-sm text-foreground truncate">{pet.name}</h3>
                       <p className="text-xs text-muted-foreground">{getStageText(pet.growth_stage)}</p>
                       <div className="mt-2">
@@ -300,13 +334,26 @@ const PetStorage = () => {
                 return (
                   <Card 
                     key={pet.id}
-                    className={`p-3 hover:shadow-lg transition-all cursor-pointer ${isActive ? 'ring-2 ring-primary' : ''}`}
+                    className={`p-3 hover:shadow-lg transition-all cursor-pointer relative ${isActive ? 'ring-2 ring-primary' : ''}`}
                     onClick={() => setSelectedPet(pet)}
                   >
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-1 right-1 h-5 w-5 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      onClick={(e) => handleDeletePet(e, pet)}
+                    >
+                      <Trash2 size={12} />
+                    </Button>
                     <div className="text-center">
-                      <div className="text-3xl mb-1">{getPetEmoji(pet)}</div>
+                      <div className="text-3xl mb-1">{getPetEmoji(pet.type, pet.growth_stage)}</div>
                       <h3 className="font-bold text-xs text-foreground truncate">{pet.name}</h3>
                       <p className="text-xs text-muted-foreground">{getStageText(pet.growth_stage)}</p>
+                      {pet.tier && (
+                        <p className={`text-xs font-bold ${getTierColor(pet.tier)}`}>
+                          {getTierText(pet.tier)}
+                        </p>
+                      )}
                     </div>
                   </Card>
                 );
@@ -342,7 +389,7 @@ const PetStorage = () => {
             <>
               <DialogHeader>
                 <DialogTitle className="text-center">
-                  <div className="text-6xl mb-2">{getPetEmoji(selectedPet)}</div>
+                  <div className="text-6xl mb-2">{getPetEmoji(selectedPet.type, selectedPet.growth_stage)}</div>
                   {editingName ? (
                     <div className="flex gap-2 items-center justify-center">
                       <Input
@@ -439,6 +486,17 @@ const PetStorage = () => {
                   </Button>
                 </div>
 
+                {/* 티어 표시 */}
+                {selectedPet.tier && (
+                  <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-2 border-purple-200">
+                    <p className="text-center">
+                      <span className={`text-sm font-bold ${getTierColor(selectedPet.tier)}`}>
+                        {getTierText(selectedPet.tier)} 등급
+                      </span>
+                    </p>
+                  </div>
+                )}
+
                 {/* 힌트 */}
                 <div className="p-3 bg-blue-50 rounded-lg">
                   <p className="text-xs text-muted-foreground text-center">
@@ -447,9 +505,70 @@ const PetStorage = () => {
                       : `💡 먹이를 ${5 - selectedPet.feedCount}개 더 주면 성장해요!`}
                   </p>
                 </div>
+
+                {/* 삭제 버튼 */}
+                <Button
+                  variant="destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeletePet(e as any, selectedPet);
+                  }}
+                  className="w-full"
+                  size="sm"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  펫 삭제
+                </Button>
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* 삭제 확인 다이얼로그 */}
+      <Dialog open={deleteDialog.open} onOpenChange={(open) => !open && handleCancelDelete()}>
+        <DialogContent className="mx-auto max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 size={20} />
+              펫 삭제 확인
+            </DialogTitle>
+            <DialogDescription className="text-left">
+              <strong>'{deleteDialog.pet?.name}'</strong>을(를) 삭제하시겠습니까?
+              <br /><br />
+              <span className="text-red-600">
+                • 삭제된 펫은 복구할 수 없습니다
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={handleCancelDelete}
+              disabled={deleting}
+              className="flex-1"
+            >
+              취소
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deleting}
+              className="flex-1"
+            >
+              {deleting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  삭제 중...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  삭제
+                </>
+              )}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
