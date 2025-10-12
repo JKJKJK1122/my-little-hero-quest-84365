@@ -239,10 +239,10 @@ const CustomGamePlay = () => {
         .from('user_progress')
         .insert([{
           scenario_id: currentScenario.id,
+          user_id: 'anonymous', // 임시 사용자 ID
           user_session: userSession,
           is_correct: isAnswerCorrect,
-          attempts: 1,
-          completed_at: isAnswerCorrect ? new Date().toISOString() : null
+          attempts: 1
         }]);
 
       // 틀린 경우 오답노트에 추가
@@ -251,7 +251,7 @@ const CustomGamePlay = () => {
           .from('wrong_answers')
           .insert([{
             scenario_id: currentScenario.id,
-            user_session: userSession,
+            user_id: 'anonymous', // 임시 사용자 ID
             correct_count: 0
           }]);
       }
