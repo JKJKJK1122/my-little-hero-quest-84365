@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+import { getDeviceUserId } from '@/utils/userSession';
 
 interface Scenario {
   id: string;
@@ -37,8 +38,9 @@ const CustomGamePlay = () => {
   const [deletingScenario, setDeletingScenario] = useState(false);
 
   const userSession = `session_${Date.now()}`;
+  const deviceUserId = getDeviceUserId();
   const decodedThemeName = decodeURIComponent(themeName || '');
-
+  
   // TTS 및 음성인식
   const { speak, stop: stopSpeaking, isSpeaking } = useTextToSpeech();
   const { isListening, startListening, stopListening } = useSpeechRecognition({
@@ -239,7 +241,7 @@ const CustomGamePlay = () => {
         .from('user_progress')
         .insert([{
           scenario_id: currentScenario.id,
-          user_id: 'anonymous', // 임시 사용자 ID
+          user_id: deviceUserId,
           user_session: userSession,
           is_correct: isAnswerCorrect,
           attempts: 1
@@ -251,7 +253,7 @@ const CustomGamePlay = () => {
           .from('wrong_answers')
           .insert([{
             scenario_id: currentScenario.id,
-            user_id: 'anonymous', // 임시 사용자 ID
+            user_id: deviceUserId,
             correct_count: 0
           }]);
       }

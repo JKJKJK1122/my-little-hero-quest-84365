@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, RotateCcw, Trash2, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { getDeviceUserId } from '@/utils/userSession';
 
 interface WrongAnswer {
   id: string;
@@ -50,6 +51,8 @@ const WrongAnswers = () => {
     try {
       setLoading(true);
       
+      const deviceUserId = getDeviceUserId();
+      
       const { data, error } = await supabase
         .from('wrong_answers')
         .select(`
@@ -69,6 +72,7 @@ const WrongAnswers = () => {
             )
           )
         `)
+        .eq('user_id', deviceUserId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

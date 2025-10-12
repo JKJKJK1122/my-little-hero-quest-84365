@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { SCENARIOS } from "@/data/GameScenarios";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { getDeviceUserId } from "@/utils/userSession";
 
 interface Scenario {
   id: string;
@@ -37,7 +38,10 @@ const GamePlay = () => {
 
   // 세션 ID 생성 (임시로 timestamp 사용)
   const userSession = `session_${Date.now()}`;
-
+  
+  // 디바이스 기반 임시 사용자 ID (UUID)
+  const deviceUserId = getDeviceUserId();
+  
   // TTS 및 음성인식
   const { speak, stop: stopSpeaking, isSpeaking } = useTextToSpeech();
   const { isListening, startListening, stopListening } = useSpeechRecognition({
@@ -306,6 +310,7 @@ const GamePlay = () => {
       await supabase.from("user_progress").insert([
         {
           scenario_id: currentScenario.id,
+          user_id: deviceUserId,
           user_session: userSession,
           is_correct: correct,
           attempts: 1,
@@ -318,14 +323,14 @@ const GamePlay = () => {
           .from("wrong_answers")
           .select("id")
           .eq("scenario_id", currentScenario.id)
-          .eq("user_id", "anonymous")
-          .single();
+          .eq("user_id", deviceUserId)
+          .maybeSingle();
 
         if (!existing) {
           await supabase.from("wrong_answers").insert([
             {
               scenario_id: currentScenario.id,
-              user_id: "anonymous",
+              user_id: deviceUserId,
               correct_count: 0,
             },
           ]);
