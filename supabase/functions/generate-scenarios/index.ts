@@ -22,10 +22,56 @@ serve(async (req) => {
       throw new Error('OpenAI API Key is not set');
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    const { problemDescription } = await req.json();
+    // Check request size limit
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 10000) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Request too large - maximum 10KB allowed' 
+      }), {
+        status: 413,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    console.log('Generating scenarios for problem:', problemDescription);
+    const requestBody = await req.json();
+    const { problemDescription } = requestBody;
+
+    // Input validation
+    if (!problemDescription || typeof problemDescription !== 'string') {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'problemDescription is required and must be a string' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const trimmedDescription = problemDescription.trim();
+    if (trimmedDescription.length < 10) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Description too short - minimum 10 characters required' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (trimmedDescription.length > 500) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Description too long - maximum 500 characters allowed' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    console.log('Generating scenarios for problem:', trimmedDescription);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -50,7 +96,7 @@ serve(async (req) => {
           },
           { 
             role: 'user', 
-            content: `다음 문제 상황에 대한 교육 시나리오 10개를 만들어주세요: ${problemDescription}` 
+            content: `다음 문제 상황에 대한 교육 시나리오 10개를 만들어주세요: ${trimmedDescription}` 
           }
         ],
         max_tokens: 3000,
@@ -98,7 +144,7 @@ serve(async (req) => {
           },
           { 
             role: 'user', 
-            content: `다음 상황에 대한 테마 이름을 만들어주세요: ${problemDescription}` 
+            content: `다음 상황에 대한 테마 이름을 만들어주세요: ${trimmedDescription}` 
           }
         ],
         max_tokens: 100,
@@ -114,7 +160,7 @@ serve(async (req) => {
       .from('custom_themes')
       .insert([{
         theme_name: themeName,
-        description: problemDescription
+        description: trimmedDescription
       }])
       .select()
       .single();

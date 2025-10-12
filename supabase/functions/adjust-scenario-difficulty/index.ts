@@ -21,8 +21,64 @@ serve(async (req) => {
       throw new Error('OpenAI API Key is not set');
     }
 
+    // Check request size limit
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 10000) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Request too large - maximum 10KB allowed' 
+      }), {
+        status: 413,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const requestBody = await req.json();
+    const { scenarios, difficulty } = requestBody;
+
+    // Input validation
+    if (!Array.isArray(scenarios)) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'scenarios must be an array' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (scenarios.length === 0) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'At least one scenario is required' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (scenarios.length > 20) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Too many scenarios - maximum 20 scenarios allowed at once' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const validDifficulties = ['beginner', 'intermediate', 'advanced'];
+    if (difficulty && !validDifficulties.includes(difficulty)) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'difficulty must be one of: beginner, intermediate, advanced' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const { scenarios, difficulty } = await req.json();
 
     console.log('Adjusting scenario difficulty:', { difficulty, scenarioCount: scenarios.length });
 
