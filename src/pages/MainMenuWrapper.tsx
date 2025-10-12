@@ -12,14 +12,6 @@ const MainMenuWrapper = () => {
   }, []);
 
   const checkAuthAndTest = async () => {
-    // 로그인 확인
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      navigate('/auth');
-      return;
-    }
-
     // 문해력 테스트를 완료했는지 확인
     const isTestCompleted = localStorage.getItem('literacyTestCompleted');
     
