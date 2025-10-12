@@ -9,7 +9,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { SCENARIOS } from "@/data/GameScenarios";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { getDeviceUserId } from "@/utils/userSession";
 
 interface Scenario {
   id: string;
@@ -38,10 +37,7 @@ const GamePlay = () => {
 
   // 세션 ID 생성 (임시로 timestamp 사용)
   const userSession = `session_${Date.now()}`;
-  
-  // 디바이스 기반 임시 사용자 ID (UUID)
-  const deviceUserId = getDeviceUserId();
-  
+
   // TTS 및 음성인식
   const { speak, stop: stopSpeaking, isSpeaking } = useTextToSpeech();
   const { isListening, startListening, stopListening } = useSpeechRecognition({
@@ -310,31 +306,22 @@ const GamePlay = () => {
       await supabase.from("user_progress").insert([
         {
           scenario_id: currentScenario.id,
-          user_id: deviceUserId,
           user_session: userSession,
-          is_correct: correct,
+          is_correct: isAnswercorrect,
           attempts: 1,
+          completed_at: isAnswerCorrect ? new Date().toISOString() : null,
         },
       ]);
 
       // 오답인 경우 wrong_answers 테이블에 추가
-      if (!correct) {
-        const { data: existing } = await supabase
-          .from("wrong_answers")
-          .select("id")
-          .eq("scenario_id", currentScenario.id)
-          .eq("user_id", deviceUserId)
-          .maybeSingle();
-
-        if (!existing) {
-          await supabase.from("wrong_answers").insert([
-            {
-              scenario_id: currentScenario.id,
-              user_id: deviceUserId,
-              correct_count: 0,
-            },
-          ]);
-        }
+      if (!isAnswerCorrect) {
+        await supabase.from("wrong_answers").insert([
+          {
+            scenario_id: currentScenario.id,
+            user_session: userSession,
+            correct_count: 0,
+          },
+        ]);
       }
     } catch (error) {
       console.error("Error saving progress:", error);
