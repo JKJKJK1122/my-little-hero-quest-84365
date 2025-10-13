@@ -302,6 +302,7 @@ const loadScenarios = async () => {
         .from('user_progress')
         .insert([{
           scenario_id: currentScenario.id,
+          user_id: 'anonymous',
           user_session: userSession,
           is_correct: correct,
           attempts: 1
@@ -313,7 +314,7 @@ const loadScenarios = async () => {
           .from('wrong_answers')
           .select('id')
           .eq('scenario_id', currentScenario.id)
-          .eq('user_session', userSession)
+          .eq('user_id', 'anonymous')
           .single();
 
         if (!existing) {
@@ -321,7 +322,7 @@ const loadScenarios = async () => {
             .from('wrong_answers')
             .insert([{
               scenario_id: currentScenario.id,
-              user_session: userSession,
+              user_id: 'anonymous',
               correct_count: 0
             }]);
         }

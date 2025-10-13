@@ -97,6 +97,8 @@ const SecretMission = () => {
       setDeleting(true);
       const theme = deleteDialog.theme;
 
+      console.log('🗑️ 테마 삭제 시작:', theme.theme_name);
+
       // 1. 해당 테마의 모든 시나리오 조회
       const { data: scenarios, error: scenariosError } = await supabase
         .from('scenarios')
@@ -104,35 +106,55 @@ const SecretMission = () => {
         .eq('category', 'custom')
         .eq('theme', theme.theme_name);
 
-      if (scenariosError) throw scenariosError;
+      if (scenariosError) {
+        console.error('❌ 시나리오 조회 실패:', scenariosError);
+        throw scenariosError;
+      }
+
+      console.log('📋 조회된 시나리오:', scenarios?.length || 0);
 
       // 2. 각 시나리오의 옵션들 삭제
       if (scenarios && scenarios.length > 0) {
         const scenarioIds = scenarios.map(s => s.id);
         
+        console.log('🗑️ 옵션 삭제 시작:', scenarioIds);
         const { error: optionsError } = await supabase
           .from('scenario_options')
           .delete()
           .in('scenario_id', scenarioIds);
 
-        if (optionsError) throw optionsError;
+        if (optionsError) {
+          console.error('❌ 옵션 삭제 실패:', optionsError);
+          throw optionsError;
+        }
+        console.log('✅ 옵션 삭제 완료');
 
         // 3. 시나리오들 삭제
+        console.log('🗑️ 시나리오 삭제 시작');
         const { error: scenariosDeleteError } = await supabase
           .from('scenarios')
           .delete()
           .in('id', scenarioIds);
 
-        if (scenariosDeleteError) throw scenariosDeleteError;
+        if (scenariosDeleteError) {
+          console.error('❌ 시나리오 삭제 실패:', scenariosDeleteError);
+          throw scenariosDeleteError;
+        }
+        console.log('✅ 시나리오 삭제 완료');
       }
 
       // 4. 테마 삭제
+      console.log('🗑️ 테마 삭제 시작');
       const { error: themeError } = await supabase
         .from('custom_themes')
         .delete()
         .eq('id', theme.id);
 
-      if (themeError) throw themeError;
+      if (themeError) {
+        console.error('❌ 테마 삭제 실패:', themeError);
+        throw themeError;
+      }
+      console.log('✅ 테마 삭제 완료');
 
       // 5. DB에서 최신 데이터 다시 로드
       await loadCustomThemes();
@@ -167,41 +189,63 @@ const SecretMission = () => {
     try {
       setDeletingAll(true);
 
+      console.log('🗑️ 전체 삭제 시작');
+
       // 모든 커스텀 테마의 시나리오들 조회
       const { data: allScenarios, error: scenariosError } = await supabase
         .from('scenarios')
         .select('id')
         .eq('category', 'custom');
 
-      if (scenariosError) throw scenariosError;
+      if (scenariosError) {
+        console.error('❌ 전체 시나리오 조회 실패:', scenariosError);
+        throw scenariosError;
+      }
+
+      console.log('📋 조회된 전체 시나리오:', allScenarios?.length || 0);
 
       // 모든 시나리오 옵션들 삭제
       if (allScenarios && allScenarios.length > 0) {
         const scenarioIds = allScenarios.map(s => s.id);
         
+        console.log('🗑️ 전체 옵션 삭제 시작');
         const { error: optionsError } = await supabase
           .from('scenario_options')
           .delete()
           .in('scenario_id', scenarioIds);
 
-        if (optionsError) throw optionsError;
+        if (optionsError) {
+          console.error('❌ 전체 옵션 삭제 실패:', optionsError);
+          throw optionsError;
+        }
+        console.log('✅ 전체 옵션 삭제 완료');
 
         // 모든 커스텀 시나리오들 삭제
+        console.log('🗑️ 전체 시나리오 삭제 시작');
         const { error: scenariosDeleteError } = await supabase
           .from('scenarios')
           .delete()
           .eq('category', 'custom');
 
-        if (scenariosDeleteError) throw scenariosDeleteError;
+        if (scenariosDeleteError) {
+          console.error('❌ 전체 시나리오 삭제 실패:', scenariosDeleteError);
+          throw scenariosDeleteError;
+        }
+        console.log('✅ 전체 시나리오 삭제 완료');
       }
 
       // 모든 커스텀 테마들 삭제
+      console.log('🗑️ 전체 테마 삭제 시작');
       const { error: themesError } = await supabase
         .from('custom_themes')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000'); // 모든 테마 삭제
 
-      if (themesError) throw themesError;
+      if (themesError) {
+        console.error('❌ 전체 테마 삭제 실패:', themesError);
+        throw themesError;
+      }
+      console.log('✅ 전체 테마 삭제 완료');
 
       // DB에서 최신 데이터 다시 로드
       await loadCustomThemes();
