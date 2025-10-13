@@ -36,10 +36,12 @@ const GamePlay = () => {
   const [loading, setLoading] = useState(true);
   const [difficultyLevel, setDifficultyLevel] = useState<"beginner" | "intermediate" | "advanced">("beginner");
 
-  // 디바이스 기반 사용자 ID 및 세션 ID
-  const deviceUserId = getDeviceUserId();
+  // 세션 ID 생성 (임시로 timestamp 사용)
   const userSession = `session_${Date.now()}`;
-
+  
+  // 디바이스 기반 임시 사용자 ID (UUID)
+  const deviceUserId = getDeviceUserId();
+  
   // TTS 및 음성인식
   const { speak, stop: stopSpeaking, isSpeaking } = useTextToSpeech();
   const { isListening, startListening, stopListening } = useSpeechRecognition({
@@ -317,15 +319,13 @@ const GamePlay = () => {
 
       // 오답인 경우 wrong_answers 테이블에 추가
       if (!correct) {
-        // 이미 wrong_answers에 있는지 확인
         const { data: existing } = await supabase
           .from("wrong_answers")
-          .select("*")
+          .select("id")
           .eq("scenario_id", currentScenario.id)
           .eq("user_id", deviceUserId)
           .maybeSingle();
 
-        // 없으면 새로 추가
         if (!existing) {
           await supabase.from("wrong_answers").insert([
             {
