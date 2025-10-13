@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { SCENARIOS } from "@/data/GameScenarios";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { getDeviceUserId } from "@/utils/userSession";
 
 interface Scenario {
   id: string;
@@ -35,7 +36,8 @@ const GamePlay = () => {
   const [loading, setLoading] = useState(true);
   const [difficultyLevel, setDifficultyLevel] = useState<"beginner" | "intermediate" | "advanced">("beginner");
 
-  // 세션 ID 생성 (임시로 timestamp 사용)
+  // 디바이스 기반 사용자 ID 및 세션 ID
+  const deviceUserId = getDeviceUserId();
   const userSession = `session_${Date.now()}`;
 
   // TTS 및 음성인식
@@ -306,22 +308,33 @@ const GamePlay = () => {
       await supabase.from("user_progress").insert([
         {
           scenario_id: currentScenario.id,
+          user_id: deviceUserId,
           user_session: userSession,
-          is_correct: isAnswercorrect,
+          is_correct: correct,
           attempts: 1,
-          completed_at: isAnswerCorrect ? new Date().toISOString() : null,
         },
       ]);
 
       // 오답인 경우 wrong_answers 테이블에 추가
-      if (!isAnswerCorrect) {
-        await supabase.from("wrong_answers").insert([
-          {
-            scenario_id: currentScenario.id,
-            user_session: userSession,
-            correct_count: 0,
-          },
-        ]);
+      if (!correct) {
+        // 이미 wrong_answers에 있는지 확인
+        const { data: existing } = await supabase
+          .from("wrong_answers")
+          .select("*")
+          .eq("scenario_id", currentScenario.id)
+          .eq("user_id", deviceUserId)
+          .maybeSingle();
+
+        // 없으면 새로 추가
+        if (!existing) {
+          await supabase.from("wrong_answers").insert([
+            {
+              scenario_id: currentScenario.id,
+              user_id: deviceUserId,
+              correct_count: 0,
+            },
+          ]);
+        }
       }
     } catch (error) {
       console.error("Error saving progress:", error);
