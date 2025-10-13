@@ -134,8 +134,8 @@ const SecretMission = () => {
 
       if (themeError) throw themeError;
 
-      // 5. DB에서 최신 데이터 다시 로드
-      await loadCustomThemes();
+      // 5. 상태 업데이트
+      setThemes(themes.filter(t => t.id !== theme.id));
       setDeleteDialog({ open: false, theme: null });
 
       toast({
@@ -203,8 +203,8 @@ const SecretMission = () => {
 
       if (themesError) throw themesError;
 
-      // DB에서 최신 데이터 다시 로드
-      await loadCustomThemes();
+      // 상태 초기화
+      setThemes([]);
       setDeleteAllDialog(false);
 
       toast({
