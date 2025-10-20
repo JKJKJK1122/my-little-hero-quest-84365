@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogHeader } from '@/components/ui/dialog';
-import { ArrowLeft, Zap, Calendar, Trash2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogHeader } from "@/components/ui/dialog";
+import { ArrowLeft, Zap, Calendar, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface CustomTheme {
   id: string;
@@ -18,7 +18,7 @@ interface CustomTheme {
 const SecretMission = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   const [themes, setThemes] = useState<CustomTheme[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -32,40 +32,37 @@ const SecretMission = () => {
   const loadCustomThemes = async () => {
     try {
       setLoading(true);
-      
-      // 커스텀 테마들을 가져오고, 각 테마별 시나리오 개수도 함께 조회
       const { data: themesData, error: themesError } = await supabase
-        .from('custom_themes')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("custom_themes")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (themesError) throw themesError;
 
       if (themesData) {
-        // 각 테마별로 시나리오 개수 조회
         const themesWithCount = await Promise.all(
           themesData.map(async (theme) => {
             const { count } = await supabase
-              .from('scenarios')
-              .select('*', { count: 'exact', head: true })
-              .eq('category', 'custom')
-              .eq('theme', theme.theme_name);
+              .from("scenarios")
+              .select("*", { count: "exact", head: true })
+              .eq("category", "custom")
+              .eq("theme", theme.theme_name);
 
             return {
               ...theme,
-              scenario_count: count || 0
+              scenario_count: count || 0,
             };
-          })
+          }),
         );
 
         setThemes(themesWithCount);
       }
     } catch (error) {
-      console.error('Error loading custom themes:', error);
+      console.error("Error loading custom themes:", error);
       toast({
         title: "오류",
         description: "테마를 불러오는 중 오류가 발생했습니다.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -74,10 +71,10 @@ const SecretMission = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return date.toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -87,33 +84,74 @@ const SecretMission = () => {
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = async () => {
-    if (!themeToDelete) return;
+  /**
+   * 옵션 A 방식:
+   * - 컨펌 버튼에서 id(그리고 이름)를 직접 전달
+   * - 내부에서 themeToDelete 상태에 의존하지 않음 (상태 소실 이슈 방지)
+   * - FK 이슈를 피하려고 scenario_options -> scenarios -> custom_themes 순서로 삭제
+   */
+  const handleConfirmDelete = async (themeId?: string, themeName?: string) => {
+    if (!themeId || !themeName) return;
 
     try {
       setDeleting(true);
 
-      const { error } = await supabase
-        .from('custom_themes')
-        .delete()
-        .eq('id', themeToDelete.id);
+      // 1) 이 테마에 속한 시나리오 id들을 조회 (네가 쓰던 기준 그대로: category='custom' && theme=theme_name)
+      const { data: scenarios, error: sErr } = await supabase
+        .from("scenarios")
+        .select("id")
+        .eq("category", "custom")
+        .eq("theme", themeName);
 
-      if (error) throw error;
+      if (sErr) throw sErr;
 
-      toast({
-        title: "삭제 완료",
-        description: `"${themeToDelete.theme_name}" 테마가 삭제되었습니다.`,
-      });
+      const scenarioIds = (scenarios ?? []).map((s) => s.id);
+
+      // 2) 시나리오 옵션 먼저 삭제 (존재할 때만)
+      if (scenarioIds.length > 0) {
+        const { error: optErr } = await supabase.from("scenario_options").delete().in("scenario_id", scenarioIds);
+        if (optErr) throw optErr;
+      }
+
+      // 3) 시나리오 삭제
+      if (scenarioIds.length > 0) {
+        const { error: scDelErr } = await supabase.from("scenarios").delete().in("id", scenarioIds);
+        if (scDelErr) throw scDelErr;
+      }
+
+      // 4) 마지막으로 테마 삭제
+      const {
+        data: deleted,
+        error: themeErr,
+        count,
+      } = await supabase.from("custom_themes").delete().eq("id", themeId).select("id", { count: "exact" });
+
+      if (themeErr) throw themeErr;
+
+      if ((count ?? 0) === 0) {
+        // 조건 불일치/연결 프로젝트 상이 등의 가능성
+        console.warn("custom_themes 삭제 0건", { themeId, themeName, deleted });
+        toast({
+          title: "삭제되지 않았습니다",
+          description: "조건 불일치 또는 연결 설정을 확인하세요.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "삭제 완료",
+          description: `"${themeName}" 테마가 삭제되었습니다.`,
+        });
+      }
 
       setDeleteDialogOpen(false);
       setThemeToDelete(null);
-      loadCustomThemes();
+      await loadCustomThemes();
     } catch (error) {
-      console.error('Error deleting theme:', error);
+      console.error("Error deleting theme:", error);
       toast({
         title: "오류",
         description: "테마 삭제 중 오류가 발생했습니다.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setDeleting(false);
@@ -136,12 +174,7 @@ const SecretMission = () => {
       <div className="max-w-md mx-auto">
         {/* 헤더 */}
         <div className="flex items-center gap-4 mb-6">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => navigate('/')}
-            className="rounded-full bg-white shadow-md"
-          >
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="rounded-full bg-white shadow-md">
             <ArrowLeft size={20} />
           </Button>
           <div>
@@ -155,17 +188,9 @@ const SecretMission = () => {
           <div className="text-center py-12">
             <Card className="p-6">
               <div className="text-6xl mb-4">🎯</div>
-              <h3 className="text-xl font-bold text-primary mb-3">
-                아직 비밀 임무가 없어요!
-              </h3>
-              <p className="text-muted-foreground mb-6">
-                시나리오 추가에서 새로운 임무를 만들어보세요!
-              </p>
-              <Button 
-                onClick={() => navigate('/add-scenario')}
-                className="w-full"
-                size="lg"
-              >
+              <h3 className="text-xl font-bold text-primary mb-3">아직 비밀 임무가 없어요!</h3>
+              <p className="text-muted-foreground mb-6">시나리오 추가에서 새로운 임무를 만들어보세요!</p>
+              <Button onClick={() => navigate("/add-scenario")} className="w-full" size="lg">
                 <Zap className="mr-2 h-5 w-5" />
                 새로운 임무 만들기
               </Button>
@@ -175,7 +200,7 @@ const SecretMission = () => {
           // 테마 목록
           <div className="space-y-4">
             {themes.map((theme) => (
-              <Card 
+              <Card
                 key={theme.id}
                 className="p-4 hover:shadow-lg transition-all duration-300 border-2 cursor-pointer transform hover:scale-105"
                 onClick={() => navigate(`/custom-game/${encodeURIComponent(theme.theme_name)}`)}
@@ -186,16 +211,12 @@ const SecretMission = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-lg font-bold text-foreground truncate">
-                        {theme.theme_name}
-                      </h3>
+                      <h3 className="text-lg font-bold text-foreground truncate">{theme.theme_name}</h3>
                       <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex-shrink-0">
                         {theme.scenario_count}문제
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      🎯 특별한 상황 판단력 훈련 시나리오
-                    </p>
+                    <p className="text-sm text-muted-foreground mb-2">🎯 특별한 상황 판단력 훈련 시나리오</p>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Calendar size={12} />
                       <span>{formatDate(theme.created_at)}</span>
@@ -214,9 +235,9 @@ const SecretMission = () => {
             ))}
 
             {/* 새 임무 추가 버튼 */}
-            <Card 
+            <Card
               className="p-4 border-2 border-dashed border-primary hover:bg-blue-50 cursor-pointer transition-colors"
-              onClick={() => navigate('/add-scenario')}
+              onClick={() => navigate("/add-scenario")}
             >
               <div className="flex items-center justify-center gap-3 text-primary py-2">
                 <Zap size={24} />
@@ -228,9 +249,7 @@ const SecretMission = () => {
 
         {/* 하단 안내 */}
         <div className="mt-6 p-4 bg-white rounded-lg shadow-sm">
-          <p className="text-center text-primary font-medium text-sm">
-            🎮 AI가 만든 특별한 시나리오로 연습해보세요!
-          </p>
+          <p className="text-center text-primary font-medium text-sm">🎮 AI가 만든 특별한 시나리오로 연습해보세요!</p>
         </div>
       </div>
 
@@ -244,17 +263,13 @@ const SecretMission = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-3 justify-end mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-              disabled={deleting}
-            >
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
               취소
             </Button>
             <Button
               variant="destructive"
-              onClick={handleConfirmDelete}
-              disabled={deleting}
+              onClick={() => handleConfirmDelete(themeToDelete?.id, themeToDelete?.theme_name)}
+              disabled={deleting || !themeToDelete}
             >
               {deleting ? "삭제 중..." : "삭제"}
             </Button>
