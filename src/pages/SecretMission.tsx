@@ -96,52 +96,17 @@ const SecretMission = () => {
     try {
       setDeleting(true);
 
-      // 1) 이 테마에 속한 시나리오 id들을 조회 (네가 쓰던 기준 그대로: category='custom' && theme=theme_name)
-      const { data: scenarios, error: sErr } = await supabase
-        .from("scenarios")
-        .select("id")
-        .eq("category", "custom")
-        .eq("theme", themeName);
-
-      if (sErr) throw sErr;
-
-      const scenarioIds = (scenarios ?? []).map((s) => s.id);
-
-      // 2) 시나리오 옵션 먼저 삭제 (존재할 때만)
-      if (scenarioIds.length > 0) {
-        const { error: optErr } = await supabase.from("scenario_options").delete().in("scenario_id", scenarioIds);
-        if (optErr) throw optErr;
-      }
-
-      // 3) 시나리오 삭제
-      if (scenarioIds.length > 0) {
-        const { error: scDelErr } = await supabase.from("scenarios").delete().in("id", scenarioIds);
-        if (scDelErr) throw scDelErr;
-      }
-
-      // 4) 마지막으로 테마 삭제
-      const {
-        data: deleted,
-        error: themeErr,
-        count,
-      } = await supabase.from("custom_themes").delete().eq("id", themeId).select("id", { count: "exact" });
+      const { error: themeErr } = await supabase
+        .from("custom_themes")
+        .delete()
+        .eq("id", themeId);
 
       if (themeErr) throw themeErr;
 
-      if ((count ?? 0) === 0) {
-        // 조건 불일치/연결 프로젝트 상이 등의 가능성
-        console.warn("custom_themes 삭제 0건", { themeId, themeName, deleted });
-        toast({
-          title: "삭제되지 않았습니다",
-          description: "조건 불일치 또는 연결 설정을 확인하세요.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "삭제 완료",
-          description: `"${themeName}" 테마가 삭제되었습니다.`,
-        });
-      }
+      toast({
+        title: "삭제 완료",
+        description: `"${themeName}" 테마가 삭제되었습니다.`,
+      });
 
       setDeleteDialogOpen(false);
       setThemeToDelete(null);
