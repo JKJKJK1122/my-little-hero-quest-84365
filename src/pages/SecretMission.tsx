@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogHeader } from '@/components/ui/dialog';
-import { ArrowLeft, Zap, Calendar } from 'lucide-react';
+import { ArrowLeft, Zap, Calendar, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -21,6 +21,9 @@ const SecretMission = () => {
   
   const [themes, setThemes] = useState<CustomTheme[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [themeToDelete, setThemeToDelete] = useState<CustomTheme | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadCustomThemes();
@@ -76,6 +79,75 @@ const SecretMission = () => {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const handleDeleteClick = (theme: CustomTheme, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setThemeToDelete(theme);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!themeToDelete) return;
+
+    try {
+      setDeleting(true);
+
+      // 1. 테마와 연결된 시나리오들 찾기
+      const { data: scenarios, error: scenariosError } = await supabase
+        .from('scenarios')
+        .select('id')
+        .eq('category', 'custom')
+        .eq('theme', themeToDelete.theme_name);
+
+      if (scenariosError) throw scenariosError;
+
+      if (scenarios && scenarios.length > 0) {
+        const scenarioIds = scenarios.map(s => s.id);
+
+        // 2. 시나리오 옵션들 삭제
+        const { error: optionsError } = await supabase
+          .from('scenario_options')
+          .delete()
+          .in('scenario_id', scenarioIds);
+
+        if (optionsError) throw optionsError;
+
+        // 3. 시나리오들 삭제
+        const { error: deleteScenarioError } = await supabase
+          .from('scenarios')
+          .delete()
+          .in('id', scenarioIds);
+
+        if (deleteScenarioError) throw deleteScenarioError;
+      }
+
+      // 4. 테마 삭제
+      const { error: themeError } = await supabase
+        .from('custom_themes')
+        .delete()
+        .eq('id', themeToDelete.id);
+
+      if (themeError) throw themeError;
+
+      toast({
+        title: "삭제 완료",
+        description: `"${themeToDelete.theme_name}" 테마가 삭제되었습니다.`,
+      });
+
+      setDeleteDialogOpen(false);
+      setThemeToDelete(null);
+      loadCustomThemes();
+    } catch (error) {
+      console.error('Error deleting theme:', error);
+      toast({
+        title: "오류",
+        description: "테마 삭제 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (loading) {
@@ -159,6 +231,14 @@ const SecretMission = () => {
                       <span>{formatDate(theme.created_at)}</span>
                     </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => handleDeleteClick(theme, e)}
+                    className="flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 size={20} />
+                  </Button>
                 </div>
               </Card>
             ))}
@@ -183,6 +263,34 @@ const SecretMission = () => {
           </p>
         </div>
       </div>
+
+      {/* 삭제 확인 Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>테마 삭제</DialogTitle>
+            <DialogDescription>
+              "{themeToDelete?.theme_name}" 테마와 관련된 모든 시나리오가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 justify-end mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleting}
+            >
+              취소
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deleting}
+            >
+              {deleting ? "삭제 중..." : "삭제"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
