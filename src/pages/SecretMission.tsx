@@ -93,42 +93,12 @@ const SecretMission = () => {
     try {
       setDeleting(true);
 
-      // 1. 테마와 연결된 시나리오들 찾기
-      const { data: scenarios, error: scenariosError } = await supabase
-        .from('scenarios')
-        .select('id')
-        .eq('category', 'custom')
-        .eq('theme', themeToDelete.theme_name);
-
-      if (scenariosError) throw scenariosError;
-
-      if (scenarios && scenarios.length > 0) {
-        const scenarioIds = scenarios.map(s => s.id);
-
-        // 2. 시나리오 옵션들 삭제
-        const { error: optionsError } = await supabase
-          .from('scenario_options')
-          .delete()
-          .in('scenario_id', scenarioIds);
-
-        if (optionsError) throw optionsError;
-
-        // 3. 시나리오들 삭제
-        const { error: deleteScenarioError } = await supabase
-          .from('scenarios')
-          .delete()
-          .in('id', scenarioIds);
-
-        if (deleteScenarioError) throw deleteScenarioError;
-      }
-
-      // 4. 테마 삭제
-      const { error: themeError } = await supabase
+      const { error } = await supabase
         .from('custom_themes')
         .delete()
         .eq('id', themeToDelete.id);
 
-      if (themeError) throw themeError;
+      if (error) throw error;
 
       toast({
         title: "삭제 완료",
