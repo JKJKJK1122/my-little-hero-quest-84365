@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogHeader } from '@/components/ui/dialog';
-import { ArrowLeft, Zap, Calendar } from 'lucide-react';
+import { ArrowLeft, Zap, Calendar, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -21,6 +21,8 @@ const SecretMission = () => {
   
   const [themes, setThemes] = useState<CustomTheme[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   useEffect(() => {
     loadCustomThemes();
@@ -78,6 +80,74 @@ const SecretMission = () => {
     });
   };
 
+  const handleDeleteAllClick = () => {
+    setDeleteAllDialogOpen(true);
+  };
+
+  const handleConfirmDeleteAll = async () => {
+    try {
+      setDeletingAll(true);
+
+      // 모든 테마에 대해 삭제 작업 수행
+      for (const theme of themes) {
+        // 1. 해당 테마의 시나리오 ID들을 가져옴
+        const { data: scenarios, error: scenariosError } = await supabase
+          .from('scenarios')
+          .select('id')
+          .eq('category', 'custom')
+          .eq('theme', theme.theme_name);
+
+        if (scenariosError) throw scenariosError;
+
+        if (scenarios && scenarios.length > 0) {
+          const scenarioIds = scenarios.map(s => s.id);
+
+          // 2. 시나리오 옵션들 삭제
+          const { error: optionsError } = await supabase
+            .from('scenario_options')
+            .delete()
+            .in('scenario_id', scenarioIds);
+
+          if (optionsError) throw optionsError;
+
+          // 3. 시나리오들 삭제
+          const { error: scenarioDeleteError } = await supabase
+            .from('scenarios')
+            .delete()
+            .in('id', scenarioIds);
+
+          if (scenarioDeleteError) throw scenarioDeleteError;
+        }
+
+        // 4. 테마 삭제
+        const { error: themeError } = await supabase
+          .from('custom_themes')
+          .delete()
+          .eq('id', theme.id);
+
+        if (themeError) throw themeError;
+      }
+
+      toast({
+        title: "전체 삭제 완료",
+        description: "모든 비밀 임무가 삭제되었습니다.",
+      });
+
+      // 테마 목록 새로고침
+      await loadCustomThemes();
+      setDeleteAllDialogOpen(false);
+    } catch (error) {
+      console.error('Error deleting all themes:', error);
+      toast({
+        title: "오류",
+        description: "전체 삭제 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-purple-50 p-4 flex items-center justify-center">
@@ -102,10 +172,20 @@ const SecretMission = () => {
           >
             <ArrowLeft size={20} />
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-bold text-primary">🕵️ 비밀 임무 수행</h1>
             <p className="text-muted-foreground">특별한 임무에 도전해보세요!</p>
           </div>
+          {themes.length > 0 && (
+            <Button 
+              variant="destructive" 
+              size="icon"
+              onClick={handleDeleteAllClick}
+              className="rounded-full shadow-md"
+            >
+              <Trash2 size={20} />
+            </Button>
+          )}
         </div>
 
         {themes.length === 0 ? (
@@ -182,6 +262,34 @@ const SecretMission = () => {
             🎮 AI가 만든 특별한 시나리오로 연습해보세요!
           </p>
         </div>
+
+        {/* 전체 삭제 확인 Dialog */}
+        <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>전체 삭제 확인</DialogTitle>
+              <DialogDescription>
+                정말로 모든 비밀 임무를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex gap-2 justify-end mt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setDeleteAllDialogOpen(false)}
+                disabled={deletingAll}
+              >
+                취소
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleConfirmDeleteAll}
+                disabled={deletingAll}
+              >
+                {deletingAll ? '삭제 중...' : '전체 삭제'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
