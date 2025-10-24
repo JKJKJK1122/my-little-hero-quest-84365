@@ -315,7 +315,7 @@ const loadScenarios = async () => {
           .select('id')
           .eq('scenario_id', currentScenario.id)
           .eq('user_id', 'anonymous')
-          .maybeSingle();
+          .single();
 
         if (!existing) {
           await supabase
