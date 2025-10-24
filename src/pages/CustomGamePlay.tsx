@@ -189,7 +189,12 @@ const CustomGamePlay = () => {
         id: scenario.id,
         title: scenario.title,
         situation: scenario.situation,
-        options: scenario.scenario_options.sort((a, b) => a.option_order - b.option_order)
+        options: scenario.scenario_options
+          .sort(() => Math.random() - 0.5)
+          .map((opt, index) => ({
+            ...opt,
+            option_order: index,
+          }))
       }));
 
       // 랜덤하게 섞기

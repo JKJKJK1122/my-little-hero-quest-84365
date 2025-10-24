@@ -203,10 +203,11 @@ const loadScenarios = async () => {
         title: adjustTextByDifficulty(scenario.title, 'title'),
         situation: adjustTextByDifficulty(scenario.situation, 'situation'),
         options: scenario.scenario_options
-          .sort((a: any, b: any) => a.option_order - b.option_order)
-          .map((opt: any) => ({
+          .sort(() => Math.random() - 0.5)
+          .map((opt: any, index: number) => ({
             ...opt,
             text: adjustTextByDifficulty(opt.text, 'option'),
+            option_order: index,
           })),
       }));
 
@@ -219,10 +220,11 @@ const loadScenarios = async () => {
       title: adjustTextByDifficulty(scenario.title, 'title'),
       situation: adjustTextByDifficulty(scenario.situation, 'situation'),
       options: scenario.scenario_options
-        .sort((a: any, b: any) => a.option_order - b.option_order)
-        .map((opt: any) => ({
+        .sort(() => Math.random() - 0.5)
+        .map((opt: any, index: number) => ({
           ...opt,
           text: adjustTextByDifficulty(opt.text, 'option'),
+          option_order: index,
         })),
     }));
 
