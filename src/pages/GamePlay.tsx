@@ -329,14 +329,13 @@ const GamePlay = () => {
           .from("wrong_answers")
           .select("id")
           .eq("scenario_id", currentScenario.id)
-          .eq("user_id", "anonymous")
           .single();
 
         if (!existing) {
           await supabase.from("wrong_answers").insert([
             {
               scenario_id: currentScenario.id,
-              user_id: "anonymous",
+              user_session: userSession,
               correct_count: 0,
             },
           ]);
