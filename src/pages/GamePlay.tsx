@@ -157,7 +157,15 @@ const loadScenarios = async () => {
   try {
     setLoading(true);
 
-    // Supabase에서 메인 카테고리 + 현재 테마의 시나리오 불러오기
+    // 난이도 레벨 매핑: beginner -> 1, intermediate -> 2, advanced -> 3
+    const difficultyLevelMap = {
+      'beginner': 1,
+      'intermediate': 2,
+      'advanced': 3
+    };
+    const levelNumber = difficultyLevelMap[difficultyLevel];
+
+    // Supabase에서 메인 카테고리 + 현재 테마 + 난이도의 시나리오 불러오기
     const { data, error } = await supabase
       .from('scenarios')
       .select(`
@@ -172,7 +180,8 @@ const loadScenarios = async () => {
         )
       `)
       .eq('category', 'main')
-      .eq('theme', theme);
+      .eq('theme', theme)
+      .eq('difficulty_level', levelNumber);
 
     if (error) throw error;
 

@@ -189,6 +189,7 @@ export type Database = {
           category: string | null
           created_at: string | null
           custom_theme_id: string | null
+          difficulty_level: number | null
           id: string
           situation: string
           theme: string
@@ -200,6 +201,7 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           custom_theme_id?: string | null
+          difficulty_level?: number | null
           id?: string
           situation: string
           theme: string
@@ -211,6 +213,7 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           custom_theme_id?: string | null
+          difficulty_level?: number | null
           id?: string
           situation?: string
           theme?: string

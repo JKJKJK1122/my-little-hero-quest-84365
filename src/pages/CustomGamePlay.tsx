@@ -157,6 +157,14 @@ const CustomGamePlay = () => {
     try {
       setLoading(true);
       
+      // 난이도 레벨 매핑: beginner -> 1, intermediate -> 2, advanced -> 3
+      const difficultyLevelMap = {
+        'beginner': 1,
+        'intermediate': 2,
+        'advanced': 3
+      };
+      const levelNumber = difficultyLevelMap[difficultyLevel];
+      
       const { data, error } = await supabase
         .from('scenarios')
         .select(`
@@ -171,7 +179,8 @@ const CustomGamePlay = () => {
           )
         `)
         .eq('category', 'custom')
-        .eq('theme', decodedThemeName);
+        .eq('theme', decodedThemeName)
+        .eq('difficulty_level', levelNumber);
 
       if (error) throw error;
 
