@@ -35,8 +35,7 @@ const GamePlay = () => {
   const [loading, setLoading] = useState(true);
   const [difficultyLevel, setDifficultyLevel] = useState<"beginner" | "intermediate" | "advanced">("beginner");
 
-  // 세션 ID 및 사용자 ID 생성
-  const [userId] = useState(() => crypto.randomUUID());
+  // 세션 ID 및 사용자 ID 생성;
   const userSession = `session_${Date.now()}`;
 
   // TTS 및 음성인식
