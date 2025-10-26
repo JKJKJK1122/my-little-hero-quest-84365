@@ -97,7 +97,7 @@ const MainGame = () => {
 
         {/* 안내 메시지 */}
         <div className="mt-6 p-4 bg-white rounded-lg shadow-sm">
-          <p className="text-center text-primary font-medium text-sm">🎮 각 테마마다 10개의 문제가 준비되어 있어요!</p>
+          <p className="text-center text-primary font-medium text-sm">🎮 각 테마마다 20개의 문제가 준비되어 있어요!</p>
         </div>
       </div>
     </div>
