@@ -78,9 +78,9 @@ serve(async (req) => {
 
     console.log('Cleaned response text:', responseText);
 
-    const baseScenarios = JSON.parse(responseText);
+    const scenarios = JSON.parse(responseText);
 
-    console.log('Generated base scenarios:', baseScenarios);
+    console.log('Generated scenarios:', scenarios);
 
     // AI를 사용해서 의미있는 테마 이름 생성
     const themeResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -124,96 +124,44 @@ serve(async (req) => {
       throw new Error('Failed to save theme');
     }
 
-    // 각 시나리오를 3가지 난이도로 생성
+    // 시나리오들을 데이터베이스에 저장
     const savedScenarios = [];
     
-    for (const baseScenario of baseScenarios) {
-      // beginner, intermediate, advanced 3가지 난이도로 각각 생성
-      const difficulties = [
-        { level: 1, name: 'beginner' },
-        { level: 2, name: 'intermediate' },
-        { level: 3, name: 'advanced' }
-      ];
+    for (const scenario of scenarios) {
+      // 시나리오 저장
+      const { data: scenarioData, error: scenarioError } = await supabase
+        .from('scenarios')
+        .insert([{
+          title: scenario.title,
+          situation: scenario.situation,
+          category: 'custom',
+          theme: themeData.theme_name
+        }])
+        .select()
+        .single();
 
-      for (const difficulty of difficulties) {
-        let adjustedScenario = baseScenario;
-
-        // beginner와 advanced는 난이도에 맞게 조정
-        if (difficulty.level !== 2) {
-          const adjustResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${openAIApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'gpt-4o-mini',
-              messages: [
-                { 
-                  role: 'system', 
-                  content: difficulty.level === 1
-                    ? '초등학교 1학년 수준으로 매우 쉽고 간단한 단어를 사용하여 시나리오를 수정해주세요. JSON 형식으로 반환: {"title": "...", "situation": "...", "options": ["...", "...", "..."]}'
-                    : '초등학교 3학년 수준의 고급 어휘를 사용하여 시나리오를 수정해주세요. JSON 형식으로 반환: {"title": "...", "situation": "...", "options": ["...", "...", "..."]}'
-                },
-                { 
-                  role: 'user', 
-                  content: `다음 시나리오를 ${difficulty.name} 난이도로 조정해주세요:\n제목: ${baseScenario.title}\n상황: ${baseScenario.situation}\n선택지: ${baseScenario.options.join(', ')}` 
-                }
-              ],
-              max_tokens: 1000,
-              temperature: 0.3,
-            }),
-          });
-
-          const adjustData = await adjustResponse.json();
-          let adjustText = adjustData.choices[0].message.content.trim();
-          
-          if (adjustText.includes('```json')) {
-            adjustText = adjustText.replace(/```json\s*/, '').replace(/```\s*$/, '');
-          } else if (adjustText.includes('```')) {
-            adjustText = adjustText.replace(/```\s*/, '').replace(/```\s*$/, '');
-          }
-          
-          adjustedScenario = JSON.parse(adjustText.trim());
-        }
-
-        // 시나리오 저장
-        const { data: scenarioData, error: scenarioError } = await supabase
-          .from('scenarios')
-          .insert([{
-            title: adjustedScenario.title,
-            situation: adjustedScenario.situation,
-            category: 'custom',
-            theme: themeData.theme_name,
-            difficulty_level: difficulty.level
-          }])
-          .select()
-          .single();
-
-        if (scenarioError) {
-          console.error('Error saving scenario:', scenarioError);
-          continue;
-        }
-
-        // 선택지 저장
-        const optionsToSave = adjustedScenario.options || baseScenario.options;
-        for (let i = 0; i < optionsToSave.length; i++) {
-          const { error: optionError } = await supabase
-            .from('scenario_options')
-            .insert([{
-              scenario_id: scenarioData.id,
-              text: optionsToSave[i],
-              option_order: i,
-              is_correct: i === (adjustedScenario.correct_option ?? baseScenario.correct_option)
-            }]);
-
-          if (optionError) {
-            console.error('Error saving option:', optionError);
-          }
-        }
-
-        savedScenarios.push(scenarioData);
+      if (scenarioError) {
+        console.error('Error saving scenario:', scenarioError);
+        continue;
       }
+
+      // 선택지 저장
+      for (let i = 0; i < scenario.options.length; i++) {
+        const { error: optionError } = await supabase
+          .from('scenario_options')
+          .insert([{
+            scenario_id: scenarioData.id,
+            text: scenario.options[i],
+            option_order: i,
+            is_correct: i === scenario.correct_option
+          }]);
+
+        if (optionError) {
+          console.error('Error saving option:', optionError);
+        }
+      }
+
+      savedScenarios.push(scenarioData);
     }
 
     return new Response(JSON.stringify({ 
