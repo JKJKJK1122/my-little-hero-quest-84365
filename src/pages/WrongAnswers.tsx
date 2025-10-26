@@ -105,8 +105,8 @@ const WrongAnswers = () => {
     if (showResult) return;
     
     setSelectedOption(optionIndex);
-    const correctOption = reviewingScenario?.scenario.options.find(opt => opt.is_correct);
-    const isAnswerCorrect = optionIndex === correctOption?.option_order;
+    const selectedOptionData = reviewingScenario?.scenario.options[optionIndex];
+    const isAnswerCorrect = selectedOptionData?.is_correct || false;
     
     setIsCorrect(isAnswerCorrect);
     setShowResult(true);
