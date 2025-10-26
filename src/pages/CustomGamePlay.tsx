@@ -247,7 +247,6 @@ const CustomGamePlay = () => {
       await supabase.from("user_progress").insert([
         {
           scenario_id: currentScenario.id,
-          user_id: "anonymous", // 임시 사용자 ID
           user_session: userSession,
           is_correct: isAnswerCorrect,
           attempts: 1,
@@ -259,7 +258,7 @@ const CustomGamePlay = () => {
         await supabase.from("wrong_answers").insert([
           {
             scenario_id: currentScenario.id,
-            user_id: "anonymous", // 임시 사용자 ID
+            user_session: userSession,
             correct_count: 0,
           },
         ]);
