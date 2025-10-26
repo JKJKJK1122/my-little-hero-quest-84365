@@ -314,10 +314,12 @@ const GamePlay = () => {
 
     // 진행 상황 저장
     try {
+      const userId = crypto.randomUUID();
+      
       await supabase.from("user_progress").insert([
         {
+          user_id: userId,
           scenario_id: currentScenario.id,
-          user_session: userSession,
           is_correct: correct,
           attempts: 1,
         },
@@ -334,8 +336,8 @@ const GamePlay = () => {
         if (!existing) {
           await supabase.from("wrong_answers").insert([
             {
+              user_id: userId,
               scenario_id: currentScenario.id,
-              user_session: userSession,
               correct_count: 0,
             },
           ]);
