@@ -318,7 +318,6 @@ const GamePlay = () => {
       await supabase.from("user_progress").insert([
         {
           scenario_id: currentScenario.id,
-          user_id: userId,
           user_session: userSession,
           is_correct: correct,
           attempts: 1,
@@ -337,7 +336,6 @@ const GamePlay = () => {
           await supabase.from("wrong_answers").insert([
             {
               scenario_id: currentScenario.id,
-              user_id: "anonymous",
               correct_count: 0,
             },
           ]);
