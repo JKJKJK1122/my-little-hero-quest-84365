@@ -335,6 +335,7 @@ const GamePlay = () => {
           await supabase.from("wrong_answers").insert([
             {
               scenario_id: currentScenario.id,
+              user_session: userSession,
               correct_count: 0,
             },
           ]);
