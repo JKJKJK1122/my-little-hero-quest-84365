@@ -35,8 +35,9 @@ const GamePlay = () => {
   const [loading, setLoading] = useState(true);
   const [difficultyLevel, setDifficultyLevel] = useState<"beginner" | "intermediate" | "advanced">("beginner");
 
-  // 세션 ID 생성 (임시로 timestamp 사용)
+  // 세션 ID 및 사용자 ID 생성
   const userSession = `session_${Date.now()}`;
+  const userId = crypto.randomUUID();
 
   // TTS 및 음성인식
   const { speak, stop: stopSpeaking, isSpeaking } = useTextToSpeech();
@@ -316,6 +317,7 @@ const GamePlay = () => {
     try {
       await supabase.from("user_progress").insert([
         {
+          user_id: userId,
           scenario_id: currentScenario.id,
           user_session: userSession,
           is_correct: correct,
@@ -328,14 +330,15 @@ const GamePlay = () => {
         const { data: existing } = await supabase
           .from("wrong_answers")
           .select("id")
+          .eq("user_id", userId)
           .eq("scenario_id", currentScenario.id)
           .single();
 
         if (!existing) {
           await supabase.from("wrong_answers").insert([
             {
+              user_id: userId,
               scenario_id: currentScenario.id,
-              user_session: userSession,
               correct_count: 0,
             },
           ]);
